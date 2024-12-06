@@ -51,38 +51,6 @@ class Lap_Pyramid_Conv(nn.Module):
             image = F.interpolate(image, size=(level.shape[2], level.shape[3]), mode=self.interpolate_mode, align_corners=True) + level
         return image
 
-class EnetHyper(nn.Module):
-    def __init__(self, ray_hidden_dim=256):
-        super().__init__()
-        
-        self.image_mlp = nn.Sequential(
-            nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Flatten(),
-            nn.Linear(68096, ray_hidden_dim),
-            nn.ReLU(inplace=True),
-            nn.Linear(ray_hidden_dim, ray_hidden_dim),
-            nn.ReLU(inplace=True),
-            nn.Linear(ray_hidden_dim, 25)
-        )
-
-    def forward(self, image):
-        kernel = self.image_mlp(image)
-        kernel = kernel.view(image.shape[0], 1, 5, 5)
-        return kernel
 
 class ResidualBlock(nn.Module):
     def __init__(self, in_features):
@@ -172,10 +140,9 @@ class Trans_high(nn.Module):
         return mask
 
 class LPTNPaper(nn.Module):
-    def __init__(self, nrb_low=5, nrb_high=3, nrb_top=3, num_high=3, use_hypernet =False, device=torch.device('cuda')):
+    def __init__(self, nrb_low=5, nrb_high=3, nrb_top=3, num_high=3, device=torch.device('cuda')):
         super(LPTNPaper, self).__init__()
         
-        self.use_hypernet = use_hypernet
         self.device = device
         self.interpolate_mode = 'bicubic'
         
@@ -186,21 +153,16 @@ class LPTNPaper(nn.Module):
         self.trans_low = trans_low.to(self.device)
         self.trans_high = trans_high.to(self.device)
         self.trans_top = trans_top.to(self.device)
-        if(self.use_hypernet):
-            self.hyper_net = EnetHyper().to(self.device)
 
     def forward(self, real_A_full):
-        if self.use_hypernet == True:
-            kernel = self.hyper_net(real_A_full)
-            kernel = kernel[0].repeat(3, 1, 1, 1)
-        else:
-            kernel = torch.tensor([[1., 4., 6., 4., 1],
-                                            [4., 16., 24., 16., 4.],
-                                            [6., 24., 36., 24., 6.],
-                                            [4., 16., 24., 16., 4.],
-                                            [1., 4., 6., 4., 1.]])
-            kernel /= 256.
-            kernel = kernel.repeat(3, 1, 1, 1)
+        
+        kernel = torch.tensor([[1., 4., 6., 4., 1],
+                                        [4., 16., 24., 16., 4.],
+                                        [6., 24., 36., 24., 6.],
+                                        [4., 16., 24., 16., 4.],
+                                        [1., 4., 6., 4., 1.]])
+        kernel /= 256.
+        kernel = kernel.repeat(3, 1, 1, 1)
 
         # Update the kernel parameter in lap_pyramid
         self.lap_pyramid.kernel.data = kernel
