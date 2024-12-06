@@ -18,16 +18,15 @@ loss_module = importlib.import_module('utils.models.losses')
 
 class LPTNModel(BaseModel):
 
-    def __init__(self, loss_weight, kernel_loss_weight, device, lr, gan_type='standard', nrb_low=3, nrb_high=5, nrb_top=4, use_hypernet = False):
-        super(LPTNModel, self).__init__(loss_weight, kernel_loss_weight, device, lr)
+    def __init__(self, loss_weight, device, lr, gan_type='standard', nrb_low=3, nrb_high=5, nrb_top=4):
+        super(LPTNModel, self).__init__(loss_weight, device, lr)
 
         self.gan_type = gan_type
-        self.kernel_loss_weight = kernel_loss_weight
         self.nrb_low = nrb_low
         self.nrb_high = nrb_high
         self.nrb_top = nrb_top
-        self.use_hypernet = use_hypernet
 
+        #define multiple here 
         # creating discriminator object
         self.device = torch.device(device)
         disc = Discriminator()
@@ -39,7 +38,6 @@ class LPTNModel(BaseModel):
         nrb_high =self.nrb_high,
         nrb_top =self.nrb_top,
         num_high= 2,
-        use_hypernet= self.use_hypernet,
         device=self.device,
         )
         
@@ -55,8 +53,6 @@ class LPTNModel(BaseModel):
         glw = 1
         print("GAN TURNED OFF" if glw==0 else "GAN TURNED ON")
 
-        # initialize losses
-        self.KLoss = MSELoss(loss_weight=self.kernel_loss_weight, reduction = 'mean').to(self.device)
         self.MLoss = MSELoss(loss_weight=self.loss_weight, reduction='mean').to(self.device)
         self.GLoss = GANLoss(gan_type=self.gan_type, real_label_val=1.0, fake_label_val=0.0, loss_weight=glw).to(self.device)
         
@@ -103,12 +99,6 @@ class LPTNModel(BaseModel):
                                                  lr=0.0001, weight_decay=0, betas=[0.9, 0.99])                     
 
         self.optimizers.append(self.optimizer_d)
-        
-        if(self.use_hypernet):            
-            self.optimizer_h = torch.optim.Adam(self.net_g.hyper_net.parameters(),
-                                                lr=0.0001, weight_decay=0, betas=[0.9, 0.99])
-
-            self.optimizers.append(self.optimizer_h)
 
     def feed_data(self, LLI, HLI):
         """
@@ -127,16 +117,14 @@ class LPTNModel(BaseModel):
             p.requires_grad = False
 
         self.optimizer_g.zero_grad()
-        self.output = self.net_g(self.LLI)
-
-        if(self.use_hypernet):
-            self.output_kernel = self.net_g.hyper_net(self.LLI)
+        self.output,pyr_pred = self.net_g(self.LLI)
 
         l_g_total = 0
-        l_g_ker = 0
         loss_dict = OrderedDict()
         if (current_iter % self.net_d_iters == 0 and current_iter > self.net_d_init_iters):
             
+            #the new code come here 
+
             # pixel loss
             l_g_pix = self.MLoss(self.output, self.HLI).to(self.device)
             l_g_total += l_g_pix
@@ -148,27 +136,21 @@ class LPTNModel(BaseModel):
             l_g_total += l_g_gan
             loss_dict['l_g_gan'] = l_g_gan
             
-            #kernel loss
-            if(self.use_hypernet):
-                self.optimizer_h.zero_grad()
-                l_g_ker = self.KLoss(self.output_kernel, self.opt_kernel).to(self.device)
-                l_g_total += self.kernel_loss_weight*l_g_ker
 
             l_g_total.backward()
             self.optimizer_g.step()
 
-            if self.use_hypernet:
-                self.optimizer_h.step()
-            
-
+        
         # optimize net_d
         for p in self.net_d.parameters():
             p.requires_grad = True
 
         self.optimizer_d.zero_grad()
-        self.output = self.net_g(self.LLI)
+        self.output,pry_pred = self.net_g(self.LLI)
         
-        # real
+        #upadte each dicriminator 
+
+        # real        
         real_d_pred = self.net_d(self.HLI)
         l_d_real = self.GLoss(real_d_pred, True, is_disc=True)
         loss_dict['l_d_real'] = l_d_real
@@ -194,7 +176,7 @@ class LPTNModel(BaseModel):
       
         psnr_t,ssim_t,lpips_t = self.calculate_metrics(result_img,HLI_img)
 
-        return l_g_total, l_g_ker, psnr_t, ssim_t, lpips_t
+        return l_g_total, psnr_t, ssim_t, lpips_t
     
 
     def test(self):
