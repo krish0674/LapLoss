@@ -117,7 +117,7 @@ class LPTNModel(BaseModel):
             p.requires_grad = False
 
         self.optimizer_g.zero_grad()
-        self.output,pyr_pred = self.net_g(self.LLI)
+        pyr_pred,self.output = self.net_g(self.LLI)
 
         l_g_total = 0
         loss_dict = OrderedDict()
@@ -146,7 +146,7 @@ class LPTNModel(BaseModel):
             p.requires_grad = True
 
         self.optimizer_d.zero_grad()
-        self.output,pry_pred = self.net_g(self.LLI)
+        pry_pred,self.output = self.net_g(self.LLI)
         
         #upadte each dicriminator 
 
