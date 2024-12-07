@@ -10,9 +10,8 @@ from utils.models import lr_scheduler as lr_scheduler
 class BaseModel():
     """Base model."""
 
-    def __init__(self, loss_weight, kernel_loss_weight, device, lr):
+    def __init__(self, loss_weight, device, lr):
         self.loss_weight = loss_weight
-        self.kernel_loss_weight = kernel_loss_weight
         self.device = device
         self.lr = lr
         self.schedulers = []
