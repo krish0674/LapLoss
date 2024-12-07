@@ -182,7 +182,7 @@ class LPTNModel(BaseModel):
     def test(self):
         self.net_g.eval()
         with torch.no_grad():
-            self.output = self.net_g(self.LLI)
+            pyr_pred,self.output = self.net_g(self.LLI)
         self.net_g.train()
 
     def nondist_validation(self, dataloader):
