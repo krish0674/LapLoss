@@ -17,12 +17,10 @@ def train(epochs,
           nrb_top = 4,
           nrb_high = 5,
           nrb_low = 3,
-          kernel_loss_weight=1,
           device='cuda',
           lr=1e-4,
           loss_weight = 2000,
           gan_type = 'standard',
-          use_hypernet = True
           ):
     
     transform = get_transform(dataset='grad')
@@ -46,7 +44,7 @@ def train(epochs,
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     valid_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-    lptn_model = LPTNModel(loss_weight, kernel_loss_weight, device, lr, gan_type=gan_type, use_hypernet=use_hypernet, nrb_high=nrb_high, nrb_low=nrb_low, nrb_top=nrb_top)
+    lptn_model = LPTNModel(loss_weight, device, lr, gan_type=gan_type, nrb_high=nrb_high, nrb_low=nrb_low, nrb_top=nrb_top)
 
     # a,b = train_dataset.__getitem__(0)
     # print("LLI image",a.shape)
@@ -70,11 +68,10 @@ def train(epochs,
                 # print(f'Iteration {iteration}, input min: {x.min()}, max: {x.max()}, mean: {x.mean()}')
                 # print(f'Iteration {iteration}, target min: {y.min()}, max: {y.max()}, mean: {y.mean()}')
 
-                loss_iter,kernel_los_iter,psnr_train_iter,ssim_train_iter, lpips_train_iter = lptn_model.optimize_parameters(iteration)
+                loss_iter,psnr_train_iter,ssim_train_iter, lpips_train_iter = lptn_model.optimize_parameters(iteration)
                #print(f'Iteration {iteration}, loss: {loss_iter}, PSNR: {psnr_train_iter}, SSIM: {ssim_train_iter}')
 
                 total_loss.append(loss_iter)
-                kernel_loss.append(kernel_los_iter)
                 psnr_train = psnr_train + psnr_train_iter
                 ssim_train = ssim_train + ssim_train_iter
                 lpips_train = lpips_train = lpips_train_iter
@@ -84,7 +81,6 @@ def train(epochs,
         ssim_train /= (iteration+1)
         lpips_train /= (iteration+1)
         avg_loss = sum(total_loss)/len(total_loss)
-        avg_kernel_loss = sum(kernel_loss)/len(kernel_loss)
         
         print(f'TRAIN PSNR {psnr_train}')
         print(f'TRAIN SSIM {ssim_train}')
@@ -93,7 +89,6 @@ def train(epochs,
         psnr_val, ssim_val, lpips_val = lptn_model.nondist_validation(valid_loader)
 
         logger['train_loss'] = avg_loss
-        logger['kernel_loss'] = avg_kernel_loss
         logger['train_psnr'] = psnr_train
         logger['train_ssim'] = ssim_train
         logger['val_psnr'] = psnr_val
@@ -140,10 +135,8 @@ def train_model(configs):
         configs['nrb_top'],
         configs['nrb_high'],
         configs['nrb_low'],
-        configs['kernel_loss_weight'],
         configs['device'], 
         configs['lr'],
         configs['loss_weight'],
         configs['gan_type'],
-        configs['use_hypernet']
         )
