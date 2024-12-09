@@ -151,6 +151,34 @@ class LPTNModel(BaseModel):
 
         self.pyr_gt=self.pyramid_decom(self.HLI,kernel)
 
+    def calculate_weighted_loss(self, pyr_gt, pyr_pred, discriminators):
+        """
+        Calculate the weighted loss at each pyramid level with multiple discriminators.
+        Args:
+            pyr_gt: Ground truth pyramid levels (list of tensors).
+            pyr_pred: Predicted pyramid levels (list of tensors).
+            discriminators: List of discriminator models, one for each pyramid level.
+        Returns:
+            total_loss: Weighted total loss.
+            loss_dict: Dictionary of individual losses at each level.
+        """
+        weights = [4/7, 2/7, 1/7]  # Define weights for each level
+        total_loss = 0.0
+
+        for i, (gt, pred, discriminator, weight) in enumerate(zip(pyr_gt, pyr_pred, discriminators, weights)):
+            # Pixel loss at this level
+            l_pix = self.MLoss(pred, gt).to(self.device)
+
+            # GAN loss at this level
+            fake_g_pred = discriminator(pred)
+            l_gan = self.GLoss(fake_g_pred, True, is_disc=False)
+
+            # Weighted loss
+            level_loss = weight * (l_pix + l_gan)
+            total_loss += level_loss
+
+        return total_loss
+
     def optimize_parameters(self, current_iter):
         torch.autograd.set_detect_anomaly(True)
 
@@ -169,24 +197,13 @@ class LPTNModel(BaseModel):
         loss_dict = OrderedDict()
         if (current_iter % self.net_d_iters == 0 and current_iter > self.net_d_init_iters):
             
-            #the new code come here 
-
             # pixel loss
-            l_g_pix = self.MLoss(self.output, self.HLI).to(self.device)
-            l_g_total += l_g_pix
-            loss_dict['l_g_pix'] = l_g_pix
-
-            # gan loss
-            fake_g_pred = self.net_d(self.output)
-            l_g_gan = self.GLoss(fake_g_pred, True, is_disc=False)
-            l_g_total += l_g_gan
-            loss_dict['l_g_gan'] = l_g_gan
-            
-
+            discriminators = [self.net_d1, self.net_d2, self.net_d3]
+            l_g_total = self.calculate_weighted_loss(self.pyr_gt, pyr_pred, discriminators)
+            # Backpropagation and optimization
             l_g_total.backward()
             self.optimizer_g.step()
 
-        
         # optimize net_d
         for p in self.net_d1.parameters():
             p.requires_grad = True
