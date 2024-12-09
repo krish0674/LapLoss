@@ -29,8 +29,13 @@ class LPTNModel(BaseModel):
         #define multiple here 
         # creating discriminator object
         self.device = torch.device(device)
-        disc = Discriminator()
-        disc = disc.to(self.device)
+
+        disc1 = Discriminator()
+        disc1 = disc1.to(self.device)
+        disc2 = Discriminator()
+        disc2 = disc2.to(self.device)
+        disc3 = Discriminator()
+        disc3 = disc3.to(self.device)
 
         # creating model object
         model = LPTNPaper(
@@ -45,7 +50,10 @@ class LPTNModel(BaseModel):
         self.net_g = model.to(self.device)
         self.print_network(self.net_g)
 
-        self.net_d = disc.to(self.device)
+        self.net_d1 = disc1.to(self.device)
+        self.net_d2 = disc2.to(self.device)
+        self.net_d3 = disc3.to(self.device)
+
         self.print_network(self.net_d)
 
         self.init_training_settings()
@@ -95,11 +103,36 @@ class LPTNModel(BaseModel):
         self.optimizers.append(self.optimizer_g)
 
         # optimizer d
-        self.optimizer_d = torch.optim.Adam(self.net_d.parameters(),
+        self.optimizer_d1 = torch.optim.Adam(self.net_d1.parameters(),
                                                  lr=0.0001, weight_decay=0, betas=[0.9, 0.99])                     
 
-        self.optimizers.append(self.optimizer_d)
+        self.optimizers.append(self.optimizer_d1)
 
+        self.optimizer_d2 = torch.optim.Adam(self.net_d2.parameters(),
+                                                 lr=0.0001, weight_decay=0, betas=[0.9, 0.99])                     
+
+        self.optimizers.append(self.optimizer_d2)
+
+        self.optimizer_d3 = torch.optim.Adam(self.net_d3.parameters(),
+                                                 lr=0.0001, weight_decay=0, betas=[0.9, 0.99])                     
+
+        self.optimizers.append(self.optimizer_d3)
+
+    def pyramid_decom(self, img, kernel):
+        current = img
+        pyr = []
+        for _ in range(self.num_high):
+            filtered = self.conv_gauss(current, kernel)
+            down = self.downsample(filtered)
+            up = self.upsample(down, kernel)
+            if up.shape[2] != current.shape[2] or up.shape[3] != current.shape[3]:
+                up = nn.functional.interpolate(up, size=(current.shape[2], current.shape[3]), mode=self.interpolate_mode)
+            diff = current - up
+            pyr.append(diff)
+            current = down
+        pyr.append(current)
+        return pyr
+    
     def feed_data(self, LLI, HLI):
         """
         Args:
@@ -108,12 +141,25 @@ class LPTNModel(BaseModel):
         """
         self.LLI = LLI.to(self.device)
         self.HLI = HLI.to(self.device)
+        kernel = torch.tensor([[1., 4., 6., 4., 1],
+                                        [4., 16., 24., 16., 4.],
+                                        [6., 24., 36., 24., 6.],
+                                        [4., 16., 24., 16., 4.],
+                                        [1., 4., 6., 4., 1.]])
+        kernel /= 256.
+        kernel = kernel.repeat(3, 1, 1, 1)
+
+        self.pyr_gt=self.pyramid_decom(self.HLI,kernel)
 
     def optimize_parameters(self, current_iter):
         torch.autograd.set_detect_anomaly(True)
 
         # optimize net_g
-        for p in self.net_d.parameters():
+        for p in self.net_d1.parameters():
+            p.requires_grad = False
+        for p in self.net_d2.parameters():
+            p.requires_grad = False
+        for p in self.net_d3.parameters():
             p.requires_grad = False
 
         self.optimizer_g.zero_grad()
@@ -142,30 +188,41 @@ class LPTNModel(BaseModel):
 
         
         # optimize net_d
-        for p in self.net_d.parameters():
+        for p in self.net_d1.parameters():
+            p.requires_grad = True
+        for p in self.net_d2.parameters():
+            p.requires_grad = True
+        for p in self.net_d3.parameters():
             p.requires_grad = True
 
-        self.optimizer_d.zero_grad()
-        pry_pred,self.output = self.net_g(self.LLI)
-        
-        #upadte each dicriminator 
+        self.optimizer_d1.zero_grad()
+        self.optimizer_d2.zero_grad()
+        self.optimizer_d3.zero_grad()
 
-        # real        
-        real_d_pred = self.net_d(self.HLI)
-        l_d_real = self.GLoss(real_d_pred, True, is_disc=True)
-        loss_dict['l_d_real'] = l_d_real
-        loss_dict['out_d_real'] = torch.mean(real_d_pred.detach())
+        # List of discriminators, their optimizers, and pyramid levels
+        discriminators = [self.net_d1, self.net_d2, self.net_d3]
+        optimizers = [self.optimizer_d1, self.optimizer_d2, self.optimizer_d3]
+        pyr_gt_levels = self.pyr_gt
+        pyr_pred_levels = pyr_pred
 
-        # fake
-        fake_d_pred = self.net_d(self.output)
-        l_d_fake = self.GLoss(fake_d_pred, False, is_disc=True)
-        loss_dict['l_d_fake'] = l_d_fake
-        loss_dict['out_d_fake'] = torch.mean(fake_d_pred.detach())
-        gradient_penalty = compute_gradient_penalty(self.net_d, self.HLI, self.output, self.device)
-        l_d = l_d_real + l_d_fake + self.gp_weight * gradient_penalty
+        # Loop through each discriminator
+        for i, (discriminator, optimizer, pyr_gt, pyr_pred) in enumerate(zip(discriminators, optimizers, pyr_gt_levels, pyr_pred_levels)):
+            # Real
+            real_d_pred = discriminator(pyr_gt)
+            l_d_real = self.GLoss(real_d_pred, True, is_disc=True)
 
-        l_d.backward()
-        self.optimizer_d.step()
+            # Fake
+            fake_d_pred = discriminator(pyr_pred)
+            l_d_fake = self.GLoss(fake_d_pred, False, is_disc=True)
+
+            # Gradient penalty
+            gradient_penalty = compute_gradient_penalty(discriminator, pyr_gt, pyr_pred, self.device)
+            l_d = l_d_real + l_d_fake + self.gp_weight * gradient_penalty
+
+            # Backpropagation and optimization
+            l_d.backward()
+            optimizer.step()
+
         
         visuals = self.get_current_visuals()
         input_img = visuals['Low_Limage'] 
