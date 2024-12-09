@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from utils.models.base_model import BaseModel
 from utils.models.losses import compute_gradient_penalty
 
-
+from torch import nn
 from .archs.LPTN_paper_arch import LPTNPaper
 from .archs.discriminator_arch import Discriminator
 from .losses.losses import MSELoss, GANLoss
