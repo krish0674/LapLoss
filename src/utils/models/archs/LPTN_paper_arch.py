@@ -1,44 +1,47 @@
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch
 
 class Lap_Pyramid_Conv(nn.Module):
     def __init__(self, num_high=3, device=torch.device('cuda')):
         super(Lap_Pyramid_Conv, self).__init__()
-        self.interpolate_mode = 'bicubic'
+
         self.num_high = num_high
+        self.kernel = torch.tensor([[1., 4., 6., 4., 1],
+                                        [4., 16., 24., 16., 4.],
+                                        [6., 24., 36., 24., 6.],
+                                        [4., 16., 24., 16., 4.],
+                                        [1., 4., 6., 4., 1.]])
+        self.kernel /= 256.
+        self.kernel = self.kernel.repeat(3, 1, 1, 1)
         self.device = device
-        self.kernel = nn.Parameter(torch.zeros(1, 1, 5, 5), requires_grad=True)  # Placeholder for the kernel
-        
+
     def downsample(self, x):
         return x[:, :, ::2, ::2]
 
-    def upsample(self, x, kernel):
+    def upsample(self, x):
         cc = torch.cat([x, torch.zeros(x.shape[0], x.shape[1], x.shape[2], x.shape[3], device=x.device)], dim=3)
         cc = cc.view(x.shape[0], x.shape[1], x.shape[2] * 2, x.shape[3])
         cc = cc.permute(0, 1, 3, 2)
         cc = torch.cat([cc, torch.zeros(x.shape[0], x.shape[1], x.shape[3], x.shape[2] * 2, device=x.device)], dim=3)
         cc = cc.view(x.shape[0], x.shape[1], x.shape[3] * 2, x.shape[2] * 2)
         x_up = cc.permute(0, 1, 3, 2)
-        return self.conv_gauss(x_up, kernel)
+        return self.conv_gauss(x_up, 4 * self.kernel)
 
     def conv_gauss(self, img, kernel):
-        device = torch.device('cuda')
-        img = img.to(device)
-        kernel = kernel.to(device)
         img = torch.nn.functional.pad(img, (2, 2, 2, 2), mode='reflect')
         out = torch.nn.functional.conv2d(img, kernel, groups=img.shape[1])
         return out
-    
-    def pyramid_decom(self, img, kernel):
+
+    def pyramid_decom(self, img):
         current = img
         pyr = []
         for _ in range(self.num_high):
-            filtered = self.conv_gauss(current, kernel)
+            filtered = self.conv_gauss(current, self.kernel)
             down = self.downsample(filtered)
-            up = self.upsample(down, kernel)
+            up = self.upsample(down)
             if up.shape[2] != current.shape[2] or up.shape[3] != current.shape[3]:
-                up = nn.functional.interpolate(up, size=(current.shape[2], current.shape[3]), mode=self.interpolate_mode)
+                up = nn.functional.interpolate(up, size=(current.shape[2], current.shape[3]))
             diff = current - up
             pyr.append(diff)
             current = down
@@ -48,7 +51,10 @@ class Lap_Pyramid_Conv(nn.Module):
     def pyramid_recons(self, pyr):
         image = pyr[-1]
         for level in reversed(pyr[:-1]):
-            image = F.interpolate(image, size=(level.shape[2], level.shape[3]), mode=self.interpolate_mode, align_corners=True) + level
+            up = self.upsample(image)
+            if up.shape[2] != level.shape[2] or up.shape[3] != level.shape[3]:
+                up = nn.functional.interpolate(up, size=(level.shape[2], level.shape[3]))
+            image = up + level
         return image
 
 class ResidualBlock(nn.Module):
@@ -155,19 +161,9 @@ class LPTNPaper(nn.Module):
        
     def forward(self, real_A_full):
         
-        kernel = torch.tensor([[1., 4., 6., 4., 1],
-                                        [4., 16., 24., 16., 4.],
-                                        [6., 24., 36., 24., 6.],
-                                        [4., 16., 24., 16., 4.],
-                                        [1., 4., 6., 4., 1.]])
-        kernel /= 256.
-        kernel = kernel.repeat(3, 1, 1, 1)
-
-        # Update the kernel parameter in lap_pyramid
-        self.lap_pyramid.kernel.data = kernel
         
         # initial laplacian pyramid
-        pyr_A = self.lap_pyramid.pyramid_decom(img=real_A_full, kernel=kernel)
+        pyr_A = self.lap_pyramid.pyramid_decom(img=real_A_full)
         
         # upsampling lowest pyramid level
         real_A_up = nn.functional.interpolate(pyr_A[-1], size=(pyr_A[-2].shape[2], pyr_A[-2].shape[3]))
