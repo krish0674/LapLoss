@@ -14,7 +14,10 @@ class Lap_Pyramid_Conv(nn.Module):
                                         [1., 4., 6., 4., 1.]])
         self.kernel /= 256.
         self.kernel = self.kernel.repeat(3, 1, 1, 1)
+        self.kernel = self.kernel.to(device)
         self.device = device
+
+
 
     def downsample(self, x):
         return x[:, :, ::2, ::2]
