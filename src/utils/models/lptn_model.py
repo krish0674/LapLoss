@@ -84,7 +84,9 @@ class LPTNModel(BaseModel):
 
     def init_training_settings(self):
         self.net_g.train()
-        self.net_d.train()
+        self.net_d1.train()
+        self.net_d2.train()
+        self.net_d3.train()
         self.optimizers = []
         self.gp_weight = 100
         self.net_d_iters = 1
@@ -306,7 +308,9 @@ class LPTNModel(BaseModel):
 
     def save(self, path):
         self.save_network(self.net_g, 'net_g', path+'_g.pth')
-        self.save_network(self.net_d, 'net_d', path+'_d.pth')
+        self.save_network(self.net_d1, 'net_d1', path+'_d.pth')
+        self.save_network(self.net_d2, 'net_d2', path+'_d.pth')
+        self.save_network(self.net_d3, 'net_d3', path+'_d.pth')
         
     def visualise(self, save_dir='output_images', iteration=0):
         output = self.net_g(self.LLI)
