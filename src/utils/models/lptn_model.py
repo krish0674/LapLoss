@@ -135,6 +135,7 @@ class LPTNModel(BaseModel):
         current = img
         pyr = []
         for _ in range(self.num_high):
+            
             filtered = self.lap_pyramid.conv_gauss(current, kernel)
             down = self.lap_pyramid.downsample(filtered)
             up = self.lap_pyramid.upsample(down, kernel)
@@ -162,7 +163,7 @@ class LPTNModel(BaseModel):
         kernel /= 256.
         kernel = kernel.repeat(3, 1, 1, 1)
 
-        self.pyr_gt=self.pyramid_decom(self.HLI,kernel)
+        self.pyr_gt=self.pyramid_decom(self.HLI)
 
     def calculate_weighted_loss(self, pyr_gt, pyr_pred, discriminators):
         """
