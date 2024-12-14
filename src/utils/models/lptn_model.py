@@ -11,6 +11,7 @@ from utils.models.losses import compute_gradient_penalty
 
 from torch import nn
 from .archs.LPTN_paper_arch import LPTNPaper
+from .archs.LPTN_paper_arch import Lap_Pyramid_Conv
 from .archs.discriminator_arch import Discriminator
 from .losses.losses import MSELoss, GANLoss
 
@@ -45,6 +46,12 @@ class LPTNModel(BaseModel):
         nrb_top =self.nrb_top,
         num_high= self.num_high,
         device=self.device,
+        )
+
+        # Instantiate Lap_Pyramid_Conv
+        self.lap_pyramid = Lap_Pyramid_Conv(
+            num_high= self.num_high,
+            device=self.device,
         )
         
         # using model as generator
@@ -128,9 +135,9 @@ class LPTNModel(BaseModel):
         current = img
         pyr = []
         for _ in range(self.num_high):
-            filtered = self.conv_gauss(current, kernel)
-            down = self.downsample(filtered)
-            up = self.upsample(down, kernel)
+            filtered = self.lap_pyramid.conv_gauss(current, kernel)
+            down = self.lap_pyramid.downsample(filtered)
+            up = self.lap_pyramid.upsample(down, kernel)
             if up.shape[2] != current.shape[2] or up.shape[3] != current.shape[3]:
                 up = nn.functional.interpolate(up, size=(current.shape[2], current.shape[3]), mode=self.interpolate_mode)
             diff = current - up
