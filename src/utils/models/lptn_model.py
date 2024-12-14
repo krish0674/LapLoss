@@ -131,21 +131,21 @@ class LPTNModel(BaseModel):
 
         self.optimizers.append(self.optimizer_d3)
 
-    def pyramid_decom(self, img, kernel):
-        current = img
-        pyr = []
-        for _ in range(self.num_high):
+    # def pyramid_decom(self, img):
+    #     current = img
+    #     pyr = []
+    #     for _ in range(self.num_high):
             
-            filtered = self.lap_pyramid.conv_gauss(current, kernel)
-            down = self.lap_pyramid.downsample(filtered)
-            up = self.lap_pyramid.upsample(down, kernel)
-            if up.shape[2] != current.shape[2] or up.shape[3] != current.shape[3]:
-                up = nn.functional.interpolate(up, size=(current.shape[2], current.shape[3]), mode=self.interpolate_mode)
-            diff = current - up
-            pyr.append(diff)
-            current = down
-        pyr.append(current)
-        return pyr
+    #         filtered = self.lap_pyramid.conv_gauss(current, kernel)
+    #         down = self.lap_pyramid.downsample(filtered)
+    #         up = self.lap_pyramid.upsample(down, kernel)
+    #         if up.shape[2] != current.shape[2] or up.shape[3] != current.shape[3]:
+    #             up = nn.functional.interpolate(up, size=(current.shape[2], current.shape[3]), mode=self.interpolate_mode)
+    #         diff = current - up
+    #         pyr.append(diff)
+    #         current = down
+    #     pyr.append(current)
+    #     return pyr
     
     def feed_data(self, LLI, HLI):
         """
@@ -163,7 +163,7 @@ class LPTNModel(BaseModel):
         kernel /= 256.
         kernel = kernel.repeat(3, 1, 1, 1)
 
-        self.pyr_gt=self.pyramid_decom(self.HLI)
+        self.pyr_gt=self.lap_pyramid.pyramid_decom(self.HLI)
 
     def calculate_weighted_loss(self, pyr_gt, pyr_pred, discriminators):
         """
