@@ -238,6 +238,8 @@ class LPTNModel(BaseModel):
 
         # Loop through each discriminator
         for i, (discriminator, optimizer, pyr_gt, pyr_pred) in enumerate(zip(discriminators, optimizers, pyr_gt_levels, pyr_pred_levels)):
+            pyr_gt = pyr_gt.detach()
+            pyr_pred = pyr_pred.detach()
             # Real
             real_d_pred = discriminator(pyr_gt)
             l_d_real = self.GLoss(real_d_pred, True, is_disc=True)
