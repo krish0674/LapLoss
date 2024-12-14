@@ -25,6 +25,7 @@ class LPTNModel(BaseModel):
         self.nrb_low = nrb_low
         self.nrb_high = nrb_high
         self.nrb_top = nrb_top
+        self.num_high = 2  
 
         #define multiple here 
         # creating discriminator object
@@ -42,7 +43,7 @@ class LPTNModel(BaseModel):
         nrb_low =self.nrb_low,
         nrb_high =self.nrb_high,
         nrb_top =self.nrb_top,
-        num_high= 2,
+        num_high= self.num_high,
         device=self.device,
         )
         
