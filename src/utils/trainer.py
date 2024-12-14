@@ -40,7 +40,7 @@ def train(epochs,
         print(high, low)
         train_dataset = LOLTrain(high_res_folder=high, low_res_folder=low, flag=0, augmentation=get_training_augmentation())
         val_dataset = LOLTrain(high_res_folder=high, low_res_folder=low, flag=1, augmentation=get_training_augmentation())
-    
+    #lol
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     valid_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 

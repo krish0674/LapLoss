@@ -54,7 +54,10 @@ class LPTNModel(BaseModel):
         self.net_d2 = disc2.to(self.device)
         self.net_d3 = disc3.to(self.device)
 
-        self.print_network(self.net_d)
+        self.print_network(self.net_d1)
+        self.print_network(self.net_d2)
+        self.print_network(self.net_d3)
+
 
         self.init_training_settings()
         
