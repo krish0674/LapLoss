@@ -43,7 +43,7 @@ class LPTNModel(BaseModel):
         model = LPTNPaper1(
         nrb_low =self.nrb_low,
         nrb_high =self.nrb_high,
-        nrb_top =self.nrb_top,
+        # nrb_top =self.nrb_top,
         num_high= self.num_high,
         device=self.device,
         )
