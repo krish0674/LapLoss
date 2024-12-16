@@ -205,3 +205,26 @@ class LPTNPaper(nn.Module):
         fake_B_full = self.lap_pyramid.pyramid_recons(pyr_A_trans)
         # print(f"Output shape={fake_B_full.shape}")
         return pyr_A_trans,fake_B_full
+    
+class LPTNPaper1(nn.Module):
+    def __init__(self, nrb_low=5, nrb_high=3, num_high=3, device = torch.device('cuda')):
+        super(LPTNPaper, self).__init__()
+
+        self.device = device
+        self.lap_pyramid = Lap_Pyramid_Conv(num_high, self.device)
+        trans_low = Trans_low(nrb_low)
+        trans_high = Trans_high(nrb_high, num_high=num_high)
+        self.trans_low = trans_low.to(self.device)
+        self.trans_high = trans_high.to(self.device)
+
+    def forward(self, real_A_full):
+
+        pyr_A = self.lap_pyramid.pyramid_decom(img=real_A_full)
+        fake_B_low = self.trans_low(pyr_A[-1])
+        real_A_up = nn.functional.interpolate(pyr_A[-1], size=(pyr_A[-2].shape[2], pyr_A[-2].shape[3]))
+        fake_B_up = nn.functional.interpolate(fake_B_low, size=(pyr_A[-2].shape[2], pyr_A[-2].shape[3]))
+        high_with_low = torch.cat([pyr_A[-2], real_A_up, fake_B_up], 1)
+        pyr_A_trans = self.trans_high(high_with_low, pyr_A, fake_B_low)
+        fake_B_full = self.lap_pyramid.pyramid_recons(pyr_A_trans)
+
+        return pyr_A_trans,fake_B_full
