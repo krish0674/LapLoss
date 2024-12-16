@@ -203,5 +203,5 @@ class LPTNPaper(nn.Module):
         # print(result_high.shape)
         # print(fake_B_low.shape)
         fake_B_full = self.lap_pyramid.pyramid_recons(pyr_A_trans)
-        print(f"Output shape={fake_B_full.shape}")
+        # print(f"Output shape={fake_B_full.shape}")
         return pyr_A_trans,fake_B_full
