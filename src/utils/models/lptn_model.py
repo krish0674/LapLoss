@@ -10,7 +10,9 @@ from utils.models.base_model import BaseModel
 from utils.models.losses import compute_gradient_penalty
 
 from torch import nn
-from .archs.LPTN_paper_arch import LPTNPaper,LPTNPaper1
+from .archs.LPTN_paper_arch import LPTNPaper
+from .archs.lptn import LPTN
+
 from .archs.LPTN_paper_arch import Lap_Pyramid_Conv
 from .archs.discriminator_arch import Discriminator1,Discriminator2,Discriminator3
 from .losses.losses import MSELoss, GANLoss
@@ -40,7 +42,7 @@ class LPTNModel(BaseModel):
         disc3 = disc3.to(self.device)
 
         # creating model object
-        model = LPTNPaper1(
+        model = LPTN(
         nrb_low =self.nrb_low,
         nrb_high =self.nrb_high,
         # nrb_top =self.nrb_top,
