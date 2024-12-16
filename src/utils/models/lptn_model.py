@@ -181,6 +181,9 @@ class LPTNModel(BaseModel):
 
         for i, (gt, pred, discriminator, weight) in enumerate(zip(pyr_gt, pyr_pred, discriminators, weights)):
             # Pixel loss at this level
+            print(f"shape of gt at lveel {i} is {gt.shape}")
+            print(f"shape of pred at lveel {i} is {pred.shape}")
+
             l_pix = self.MLoss(pred, gt).to(self.device)
 
             # GAN loss at this level
