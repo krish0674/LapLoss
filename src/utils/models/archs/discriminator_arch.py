@@ -56,8 +56,7 @@ class Discriminator3(nn.Module):
             *discriminator_block(16, 32),
             *discriminator_block(32, 64),
             *discriminator_block(64, 128),
-            # *discriminator_block(128, 128),
-            nn.Conv2d(128, 1, 15, padding=0),
+            nn.Conv2d(128, 1, 10, padding=0), 
             nn.AdaptiveAvgPool2d((1,1))
         )
 
