@@ -33,7 +33,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, required=False, default=1e-4)
     parser.add_argument('--loss_weight', type=float, required=False, default=3000)
     parser.add_argument('--gan_type', type=str, required=False,default='vanilla')
-    parser.add_argument('--key', type=str, required=False, default='3adf824888485fb1de047a4e9bab54143ddf0cd9')
+    parser.add_argument('--key', type=str, required=False, default='6a0d17eac1d2d0d31cb4921178660ec68b3b40e5')
     parser.add_argument('--sf_path', type=str, required=False, default='./best_model_g.pth')
     parser.add_argument('--nrb_low', type=int, required=False,default=3)
     parser.add_argument('--nrb_high', type=int, required=False,default=3)
