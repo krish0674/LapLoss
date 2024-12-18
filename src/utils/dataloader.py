@@ -68,7 +68,7 @@ class SICETrainDataset(BaseDataset):
         filtered_data = []
         for image_files, label_file in self.data:
             num_images = len(image_files)
-            half_index = num_images // 2
+            half_index = num_images // 2 +1
 
             if self.exposure_type == "under":
                 filtered_data.extend([(img, label_file) for img in image_files[:half_index]])
