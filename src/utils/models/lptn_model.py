@@ -210,8 +210,8 @@ class LPTNModel(BaseModel):
             p.requires_grad = False
 
         self.optimizer_g.zero_grad()
-        pyr_pred,self.output = self.net_g(self.LLI)
-
+        _,self.output = self.net_g(self.LLI)
+        pyr_pred=self.lap_pyramid.pyramid_decom(self.output)
         l_g_total = 0
         loss_dict = OrderedDict()
         if (current_iter % self.net_d_iters == 0 and current_iter > self.net_d_init_iters):
@@ -277,7 +277,9 @@ class LPTNModel(BaseModel):
     def test(self):
         self.net_g.eval()
         with torch.no_grad():
-            pyr_pred,self.output = self.net_g(self.LLI)
+            _,self.output = self.net_g(self.LLI)
+            pyr_pred=self.lap_pyramid.pyramid_decom(self.output)
+
         self.net_g.train()
 
     def nondist_validation(self, dataloader):
@@ -329,7 +331,7 @@ class LPTNModel(BaseModel):
         self.save_network(self.net_d3, 'net_d3', path+'_d.pth')
         
     def visualise(self, save_dir='output_images', iteration=0):
-        output = self.net_g(self.LLI)
+        _,output = self.net_g(self.LLI)
         # print(self.LLI)
         # print(self.LLI.shape)
         # print(self.HLI.shape)
