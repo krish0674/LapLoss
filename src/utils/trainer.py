@@ -1,5 +1,5 @@
 import wandb
-from .dataloader import SICEGradTrain,SICEGradTest,SICEGradVal, SICEMixTrain,SICEMixVal, LOLTrain, get_training_augmentation, get_validation_augmentation, get_transform
+from .dataloader import SICETestDataset,SICETrainDataset, get_training_augmentation
 import torch
 from tqdm import tqdm as tqdm
 import albumentations as A
@@ -9,6 +9,8 @@ from torch.utils.data import DataLoader, Subset
 from .models.lptn_model import LPTNModel
 
 import pandas as pd
+from sklearn.model_selection import train_test_split
+from torch.utils.data import Subset
 
 def train(epochs,
           batch_size,
@@ -21,28 +23,31 @@ def train(epochs,
           lr=1e-4,
           loss_weight = 2000,
           gan_type = 'standard',
+          exposure='over'
           ):
     
-    transform = get_transform(dataset='grad')
-    if(dset=='mix'):
-        train_dataset = SICEMixTrain(root_dir=root_dir, augmentation= get_training_augmentation())
-        val_dataset = SICEMixVal(root_dir = root_dir, augmentation= get_validation_augmentation())
+    # transform = get_transform(dataset='grad')
+    
+    if dset == 'sice':
+        full_dataset = SICETrainDataset(
+            root_dir=root_dir, 
+            augmentation=get_training_augmentation(),
+            exposure_type=exposure
+        )
+        print(f"Total dataset size: {len(full_dataset)}")
+        
+        indices = list(range(len(full_dataset)))
+        train_indices, val_indices = train_test_split(indices, test_size=0.1, random_state=42)
+        
+        train_dataset = Subset(full_dataset, train_indices)
+        val_dataset = Subset(full_dataset, val_indices)
 
-    elif(dset=='grad'):
-        train_dataset = SICEGradTrain(root_dir=root_dir, augmentation= get_training_augmentation())
-        val_dataset = SICEGradVal(root_dir = root_dir, augmentation= get_validation_augmentation())
-
-    elif(dset=='lol'):
-        subdirectories = [os.path.join(root_dir, name) for name in os.listdir(root_dir)
-                      if os.path.isdir(os.path.join(root_dir, name))]
-        high = subdirectories[1]
-        low = subdirectories[0]
-        print(high, low)
-        train_dataset = LOLTrain(high_res_folder=high, low_res_folder=low, flag=0, augmentation=get_training_augmentation())
-        val_dataset = LOLTrain(high_res_folder=high, low_res_folder=low, flag=1, augmentation=get_training_augmentation())
-    #lol
+        print(f"Training dataset size: {len(train_dataset)}")
+        print(f"Validation dataset size: {len(val_dataset)}")
+        
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     valid_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+
 
     lptn_model = LPTNModel(loss_weight, device, lr, gan_type=gan_type, nrb_high=nrb_high, nrb_low=nrb_low, nrb_top=nrb_top)
 
@@ -139,4 +144,5 @@ def train_model(configs):
         configs['lr'],
         configs['loss_weight'],
         configs['gan_type'],
+        configs['exposure']
         )

@@ -16,11 +16,12 @@ def main(args):
         'sf_path' : args.sf_path,
         'nrb_top' :args.nrb_top,
         'nrb_high' : args.nrb_high,
-        'nrb_low' : args.nrb_low
+        'nrb_low' : args.nrb_low,
+        'exposure' :args.exposure
     }
     wandb.login(key=args.key)
     wandb.init(project="LapLoss",
-               config={'lr':args.lr, 'max_ssim':0, 'max_psnr':0,'test_psnr':0,'test_ssim': 0, 'best_epoch':0, 'loss_weight':args.loss_weight, 'gan_type': args.gan_type}, allow_val_change=True)
+               config={'lr':args.lr,'exposure':args.exposure, 'max_ssim':0, 'max_psnr':0,'test_psnr':0,'test_ssim': 0, 'best_epoch':0, 'loss_weight':args.loss_weight, 'gan_type': args.gan_type}, allow_val_change=True)
     train_model(config)
 
 if __name__ == '__main__':
@@ -29,7 +30,7 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', type=int, required=False, default=300)
     parser.add_argument('--root_dir', type=str, required=False)
     parser.add_argument('--device', type=str, required=False, default='cuda')
-    parser.add_argument('--dset', type=str, required=False, default='grad')
+    parser.add_argument('--dset', type=str, required=False, default='sice')
     parser.add_argument('--lr', type=float, required=False, default=1e-4)
     parser.add_argument('--loss_weight', type=float, required=False, default=3000)
     parser.add_argument('--gan_type', type=str, required=False,default='vanilla')
@@ -38,5 +39,7 @@ if __name__ == '__main__':
     parser.add_argument('--nrb_low', type=int, required=False,default=3)
     parser.add_argument('--nrb_high', type=int, required=False,default=3)
     parser.add_argument('--nrb_top', type=int, required=False,default=3)
+    parser.add_argument('--exposure', type=str, required=False,default='over')
+
     arguments = parser.parse_args()
     main(arguments)

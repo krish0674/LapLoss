@@ -1,5 +1,5 @@
 import wandb
-from .dataloader import SICEGradTrain,SICEGradTest,SICEGradVal, SICEMixTest, LOLTrain, get_training_augmentation, get_validation_augmentation, get_transform
+from .dataloader import SICETestDataset, get_transform
 import torch
 from tqdm import tqdm as tqdm
 import os
@@ -12,25 +12,29 @@ from torchsummary import summary
 
 
 
-def eval(root_dir, dset, kernel_loss_weight, lr,loss_weight = 2000,gan_type = 'standard', use_hypernet = True, device='cuda', nrb_top = 4, nrb_high = 5, nrb_low = 3):
+def eval(root_dir, dset, kernel_loss_weight, lr,loss_weight = 2000,gan_type = 'standard', use_hypernet = True, device='cuda', nrb_top = 4, nrb_high = 5, nrb_low = 3,exposure='over'):
 
     transform = get_transform(dataset='grad')
     
-    if(dset=='mix'):
-        test_dataset = SICEMixTest(root_dir=root_dir, augmentation= get_training_augmentation(), transform= transform)
+    if dset == 'sice':
+        if exposure == 'over' or exposure=='under':
+            # Define testing indices
+            testing_indices = [
+                *range(4, 24), 28, 31, 33, 34, 
+                *range(37, 40), *range(46, 53), 
+                *range(55, 70), *range(75, 80), 
+                *range(100, 104)
+            ]
 
-    elif(dset=='grad'):
-        test_dataset = SICEGradTest(root_dir=root_dir, augmentation= get_training_augmentation(), transform= transform)
-    
-    elif(dset=='lol'):
-        test_dataset = subdirectories = [os.path.join(root_dir, name) for name in os.listdir(root_dir)
-                      if os.path.isdir(os.path.join(root_dir, name))]
-        high = subdirectories[1]
-        low = subdirectories[0]
-        print(high, low)
-        test_dataset = LOLTrain(high_res_folder=high, low_res_folder=low, flag=2, augmentation=get_training_augmentation())
+            # Initialize the test dataset
+            test_dataset = SICETestDataset(
+                root_dir=r'/kaggle/input/sicedataset',
+                exposure_type=exposure,
+                indices=testing_indices
+            )
 
-    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+        # Create the DataLoader
+        test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
     lptn_model = LPTNModel(loss_weight, kernel_loss_weight, device, lr, gan_type=gan_type, use_hypernet=use_hypernet, nrb_high=nrb_high, nrb_low=nrb_low, nrb_top=nrb_top)
     summary(lptn_model.net_g , input_size=(3, 608, 896))
@@ -96,5 +100,6 @@ def eval_model(configs):
         configs['device'],
         configs['nrb_top'],
         configs['nrb_high'],
-        configs['nrb_low']
+        configs['nrb_low'],
+        configs['exposure']
         )
