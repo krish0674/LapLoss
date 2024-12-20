@@ -269,9 +269,9 @@ class LPTNModel(BaseModel):
             HLI_img = visuals['High_Limage']
             #del self.HLI
       
-        psnr_t,ssim_t,lpips_t = self.calculate_metrics(result_img,HLI_img)
+        psnr_t,ssim_t,mssim_t,lpips_t = self.calculate_metrics(result_img,HLI_img)
 
-        return l_g_total, psnr_t, ssim_t, lpips_t
+        return l_g_total, psnr_t, ssim_t, mssim_t, lpips_t
     
 
     def test(self):
@@ -286,6 +286,7 @@ class LPTNModel(BaseModel):
         psnr = 0
         ssim = 0
         lpips = 0
+        mssim = 0
 
         for idx,batch in enumerate(dataloader):
             low_limage, high_limage = batch
@@ -299,9 +300,10 @@ class LPTNModel(BaseModel):
                 HLI_img = visuals['High_Limage']
                 del self.HLI
 
-            x, y, z = self.calculate_metrics(result_img,HLI_img)
+            x, y, q, z = self.calculate_metrics(result_img,HLI_img)
             psnr = x + psnr
             ssim = y + ssim
+            mssim = q + mssim
             lpips = z + lpips
 
 
@@ -309,12 +311,13 @@ class LPTNModel(BaseModel):
         # print(ssim)
         psnr /= (idx + 1)
         ssim /= (idx + 1)
+        mssim /= (idx + 1)
         lpips /= (idx + 1)
         
         print(f'Val PSNR {psnr}')
         print(f'Val SSIM {ssim}')
                 
-        return psnr, ssim, lpips
+        return psnr, ssim, mssim, lpips
     
     def get_current_visuals(self):
         out_dict = OrderedDict()

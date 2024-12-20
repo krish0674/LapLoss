@@ -3,6 +3,8 @@ import torch
 from torch.nn.parallel import DataParallel, DistributedDataParallel
 from torchmetrics import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
+from torchmetrics.image import MultiscaleStructuralSimilarityIndexMeasure
+
 import numpy as np
 
 from utils.models import lr_scheduler as lr_scheduler
@@ -20,7 +22,8 @@ class BaseModel():
         self.P = PeakSignalNoiseRatio().to(self.device)
         self.Z = StructuralSimilarityIndexMeasure().to(self.device)
         self.L = LearnedPerceptualImagePatchSimilarity(net_type='vgg', reduction='mean', normalize=True).to(self.device)
-
+        self.MSSIM = MultiscaleStructuralSimilarityIndexMeasure().to(self.device)
+        
     def feed_data(self, LLI, HLI):
         pass
 
@@ -164,10 +167,17 @@ class BaseModel():
             # SSIM
             ssim = self.Z(img1, img2).item()
 
+            # MSSIM (Multi-scale SSIM)
+            mssim = self.MSSIM(img1, img2).item()
+
+            # LPIPS (expects [-1, 1] range)
+            img1 = 2 * img1 - 1
+            img2 = 2 * img2 - 1
+
             # LPIPS
             LPIP_iter = self.L(img1, img2).item()
 
-            return psnr, ssim, LPIP_iter
+            return psnr, ssim, mssim, LPIP_iter
 
             #LPIP_iter = self.L(img1,img2).to(self.device)
 
