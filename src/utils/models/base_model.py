@@ -153,10 +153,24 @@ class BaseModel():
         
     def calculate_metrics(self, img1, img2):
             
+            img1 = img1.to(self.device)
+            img2 = img2.to(self.device)
             img1 = img1.clamp_(0, 1)
             img2 = img2.clamp_(0, 1)
 
-            LPIP_iter = self.L(img1,img2).to(self.device)
+            # PSNR
+            psnr = self.P(img1, img2).item()
+
+            # SSIM
+            ssim = self.Z(img1, img2).item()
+
+            # LPIPS
+            LPIP_iter = self.L(img1, img2).item()
+
+            return psnr, ssim, LPIP_iter
+
+            #LPIP_iter = self.L(img1,img2).to(self.device)
+
             # img1 = img1
             # img1 = img1.round().int()
             # img1 = img1.float()
@@ -165,4 +179,4 @@ class BaseModel():
             # # img2 = img2.round().int()
             # # img2 = img2.float()
 
-            return self.P(img1, img2).to(self.device), self.Z(img1, img2).to(self.device), LPIP_iter        
+            #return self.P(img1, img2).to(self.device), self.Z(img1, img2).to(self.device), LPIP_iter        
