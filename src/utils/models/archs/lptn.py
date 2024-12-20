@@ -3,20 +3,23 @@ import torch.nn.functional as F
 import torch
 
 class Lap_Pyramid_Conv(nn.Module):
-    def __init__(self, num_high=3, device=torch.device('cuda')):
+    def __init__(self, num_high=3, device = torch.device('cuda')):
         super(Lap_Pyramid_Conv, self).__init__()
 
         self.num_high = num_high
-        self.kernel = torch.tensor([[1., 4., 6., 4., 1],
-                                        [4., 16., 24., 16., 4.],
-                                        [6., 24., 36., 24., 6.],
-                                        [4., 16., 24., 16., 4.],
-                                        [1., 4., 6., 4., 1.]])
-        self.kernel /= 256.
-        self.kernel = self.kernel.repeat(3, 1, 1, 1)
-        self.kernel = self.kernel.to(device)
         self.device = device
+        self.kernel = self.gauss_kernel()
 
+    def gauss_kernel(self, channels=3):
+        kernel = torch.tensor([[1., 4., 6., 4., 1],
+                               [4., 16., 24., 16., 4.],
+                               [6., 24., 36., 24., 6.],
+                               [4., 16., 24., 16., 4.],
+                               [1., 4., 6., 4., 1.]])
+        kernel /= 256.
+        kernel = kernel.repeat(channels, 1, 1, 1)
+        kernel = kernel.to(self.device)
+        return kernel
 
     def downsample(self, x):
         return x[:, :, ::2, ::2]
@@ -89,120 +92,75 @@ class Trans_low(nn.Module):
             nn.LeakyReLU(),
             nn.Conv2d(16, 3, 3, padding=1)]
 
-        self.model = nn.Sequential(*model)   
-        
+        self.model = nn.Sequential(*model)
+
     def forward(self, x):
         out = x + self.model(x)
         out = torch.tanh(out)
         return out
-    
-class Trans_top(nn.Module):
-    def __init__(self, num_residual_blocks, num_high=3):
-        super(Trans_top, self).__init__()
-        
-        self.num_high = num_high
-        
-        model = [nn.Conv2d(3, 64, 3, padding=1),
-             nn.LeakyReLU()]
-        
-        for _ in range(num_residual_blocks):
-            model += [ResidualBlock(64)]
-        
-        model += [nn.Conv2d(64, 3, 3, padding=1)]
-        
-        # code from trans_mask_block - 1x1 convolution
-        model += [nn.Conv2d(3, 16, 1),
-                nn.LeakyReLU(),
-                nn.Conv2d(16, 3, 1)]
-        
-        self.model = nn.Sequential(*model)
-        
-    def forward(self, up_mask):
-        topped_mask = self.model(up_mask)
-        return topped_mask
 
 class Trans_high(nn.Module):
     def __init__(self, num_residual_blocks, num_high=3):
         super(Trans_high, self).__init__()
-    
+
         self.num_high = num_high
-        
+
         model = [nn.Conv2d(9, 64, 3, padding=1),
-             nn.LeakyReLU()]
-        
+            nn.LeakyReLU()]
+
         for _ in range(num_residual_blocks):
             model += [ResidualBlock(64)]
-        
-        model += [nn.Conv2d(64, 3, 3, padding=1)]
-        
-        # code from trans_mask_block - 1x1 convolution
-        model += [nn.Conv2d(3, 16, 1),
-                nn.LeakyReLU(),
-                nn.Conv2d(16, 3, 1)]
-        
-        self.model = nn.Sequential(*model)
-    
-    def forward(self, high_with_low):
-        mask = self.model(high_with_low)
-        return mask
 
-class LPTNPaper(nn.Module):
-    def __init__(self, nrb_low=5, nrb_high=3, nrb_top=3, num_high=3, device=torch.device('cuda')):
-        super(LPTNPaper, self).__init__()
-        
+        model += [nn.Conv2d(64, 1, 3, padding=1)]
+
+        self.model = nn.Sequential(*model)
+
+        for i in range(self.num_high):
+            trans_mask_block = nn.Sequential(
+                nn.Conv2d(1, 16, 1),
+                nn.LeakyReLU(),
+                nn.Conv2d(16, 1, 1))
+            setattr(self, 'trans_mask_block_{}'.format(str(i)), trans_mask_block)
+
+    def forward(self, x, pyr_original, fake_low):
+
+        pyr_result = []
+        mask = self.model(x)
+
+        for i in range(self.num_high):
+            mask = nn.functional.interpolate(mask, size=(pyr_original[-2-i].shape[2], pyr_original[-2-i].shape[3]))
+            self.trans_mask_block = getattr(self, 'trans_mask_block_{}'.format(str(i)))
+            mask = self.trans_mask_block(mask)
+            result_highfreq = torch.mul(pyr_original[-2-i], mask)
+            setattr(self, 'result_highfreq_{}'.format(str(i)), result_highfreq)
+
+        for i in reversed(range(self.num_high)):
+            result_highfreq = getattr(self, 'result_highfreq_{}'.format(str(i)))
+            pyr_result.append(result_highfreq)
+
+        pyr_result.append(fake_low)
+
+        return pyr_result
+
+class LPTN(nn.Module):
+    def __init__(self, nrb_low=5, nrb_high=3, num_high=3, device = torch.device('cuda')):
+        super(LPTN, self).__init__()
+
         self.device = device
-        self.interpolate_mode = 'bicubic'
-        
-        self.lap_pyramid = Lap_Pyramid_Conv(num_high,self.device).to(self.device)
+        self.lap_pyramid = Lap_Pyramid_Conv(num_high, self.device)
         trans_low = Trans_low(nrb_low)
-        trans_high = Trans_high(num_residual_blocks=nrb_high, num_high=num_high)
-        trans_top = Trans_top(num_residual_blocks=nrb_top, num_high=num_high)
+        trans_high = Trans_high(nrb_high, num_high=num_high)
         self.trans_low = trans_low.to(self.device)
         self.trans_high = trans_high.to(self.device)
-        self.trans_top = trans_top.to(self.device)
-       
+
     def forward(self, real_A_full):
-        
-        
-        # initial laplacian pyramid
+
         pyr_A = self.lap_pyramid.pyramid_decom(img=real_A_full)
-        
-        # upsampling lowest pyramid level
-        real_A_up = nn.functional.interpolate(pyr_A[-1], size=(pyr_A[-2].shape[2], pyr_A[-2].shape[3]))
-        
-        # translating lowest pyramid level
         fake_B_low = self.trans_low(pyr_A[-1])
-        
-        # upsampling translation of the lowest pyramid level
+        real_A_up = nn.functional.interpolate(pyr_A[-1], size=(pyr_A[-2].shape[2], pyr_A[-2].shape[3]))
         fake_B_up = nn.functional.interpolate(fake_B_low, size=(pyr_A[-2].shape[2], pyr_A[-2].shape[3]))
-            
-        # concatenation of 2nd last image, upsampled last image, upsampled and translated last image
         high_with_low = torch.cat([pyr_A[-2], real_A_up, fake_B_up], 1)
-        
-        # output of trans_high
-        mask = self.trans_high(high_with_low)
-        
-        # upsampled mask
-        mask_up = nn.functional.interpolate(mask, size=(pyr_A[-3].shape[2], pyr_A[-3].shape[3]), mode=self.interpolate_mode, align_corners=True)
-        
-        # upsampled mask passed through trans_top
-        topped_mask = self.trans_top(mask_up)
-        
-        # product of trans_top's o/p and pyr[-3] (OG)
-        result_top = torch.mul(topped_mask, pyr_A[-3]).to(self.device)
-        
-        # product of trans_high's o/p and pyr[-2] (OG)
-        result_high = torch.mul(mask, pyr_A[-2]).to(self.device)
-        
-        pyr_A_trans = []
-        pyr_A_trans.append(result_top)
-        pyr_A_trans.append(result_high)
-        pyr_A_trans.append(fake_B_low)
-        # print("pyramid shapes:")
-        # print(result_top.shape)
-        # print(result_high.shape)
-        # print(fake_B_low.shape)
+        pyr_A_trans = self.trans_high(high_with_low, pyr_A, fake_B_low)
         fake_B_full = self.lap_pyramid.pyramid_recons(pyr_A_trans)
-        # print(f"Output shape={fake_B_full.shape}")
+
         return pyr_A_trans,fake_B_full
-    

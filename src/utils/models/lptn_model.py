@@ -11,8 +11,10 @@ from utils.models.losses import compute_gradient_penalty
 
 from torch import nn
 from .archs.LPTN_paper_arch import LPTNPaper
+from .archs.lptn import LPTN
+
 from .archs.LPTN_paper_arch import Lap_Pyramid_Conv
-from .archs.discriminator_arch import Discriminator
+from .archs.discriminator_arch import Discriminator1,Discriminator2,Discriminator3
 from .losses.losses import MSELoss, GANLoss
 
 loss_module = importlib.import_module('utils.models.losses')
@@ -32,11 +34,11 @@ class LPTNModel(BaseModel):
         # creating discriminator object
         self.device = torch.device(device)
 
-        disc1 = Discriminator()
+        disc1 = Discriminator1()
         disc1 = disc1.to(self.device)
-        disc2 = Discriminator()
+        disc2 = Discriminator2()
         disc2 = disc2.to(self.device)
-        disc3 = Discriminator()
+        disc3 = Discriminator3()
         disc3 = disc3.to(self.device)
 
         # creating model object
@@ -181,6 +183,9 @@ class LPTNModel(BaseModel):
 
         for i, (gt, pred, discriminator, weight) in enumerate(zip(pyr_gt, pyr_pred, discriminators, weights)):
             # Pixel loss at this level
+            # print(f"shape of gt at lveel {i} is {gt.shape}")
+            # print(f"shape of pred at lveel {i} is {pred.shape}")
+
             l_pix = self.MLoss(pred, gt).to(self.device)
 
             # GAN loss at this level
@@ -205,8 +210,8 @@ class LPTNModel(BaseModel):
             p.requires_grad = False
 
         self.optimizer_g.zero_grad()
-        pyr_pred,self.output = self.net_g(self.LLI)
-
+        _,self.output = self.net_g(self.LLI)
+        pyr_pred=self.lap_pyramid.pyramid_decom(self.output)
         l_g_total = 0
         loss_dict = OrderedDict()
         if (current_iter % self.net_d_iters == 0 and current_iter > self.net_d_init_iters):
@@ -272,7 +277,9 @@ class LPTNModel(BaseModel):
     def test(self):
         self.net_g.eval()
         with torch.no_grad():
-            pyr_pred,self.output = self.net_g(self.LLI)
+            _,self.output = self.net_g(self.LLI)
+            pyr_pred=self.lap_pyramid.pyramid_decom(self.output)
+
         self.net_g.train()
 
     def nondist_validation(self, dataloader):
@@ -324,7 +331,7 @@ class LPTNModel(BaseModel):
         self.save_network(self.net_d3, 'net_d3', path+'_d.pth')
         
     def visualise(self, save_dir='output_images', iteration=0):
-        output = self.net_g(self.LLI)
+        _,output = self.net_g(self.LLI)
         # print(self.LLI)
         # print(self.LLI.shape)
         # print(self.HLI.shape)
