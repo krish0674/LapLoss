@@ -269,9 +269,9 @@ class LPTNModel(BaseModel):
             HLI_img = visuals['High_Limage']
             #del self.HLI
       
-        psnr_t,ssim_t,mssim_t,lpips_t = self.calculate_metrics(result_img,HLI_img)
+        psnr_t,ssim_t,lpips_t = self.calculate_metrics(result_img,HLI_img)
 
-        return l_g_total, psnr_t, ssim_t, mssim_t, lpips_t
+        return l_g_total, psnr_t, ssim_t, lpips_t
     
 
     def test(self):
