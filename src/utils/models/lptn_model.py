@@ -316,6 +316,7 @@ class LPTNModel(BaseModel):
         
         print(f'Val PSNR {psnr}')
         print(f'Val SSIM {ssim}')
+        print(f'Val LPIPS {lpips}')
                 
         #return psnr, ssim, mssim, lpips
         return psnr, ssim, lpips
