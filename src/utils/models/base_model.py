@@ -3,6 +3,7 @@ import torch
 from torch.nn.parallel import DataParallel, DistributedDataParallel
 from torchmetrics import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
+import lpips
 #from torchmetrics.image import MultiscaleStructuralSimilarityIndexMeasure
 
 import numpy as np
@@ -21,7 +22,8 @@ class BaseModel():
         self.is_train = True
         self.P = PeakSignalNoiseRatio().to(self.device)
         self.Z = StructuralSimilarityIndexMeasure().to(self.device)
-        self.L = LearnedPerceptualImagePatchSimilarity(net_type='vgg', reduction='mean', normalize=True).to(self.device)
+        self.L = lpips(net_type='vgg', reduction='mean', normalize=True).to(self.device)
+        #self.L = LearnedPerceptualImagePatchSimilarity(net_type='vgg', reduction='mean', normalize=True).to(self.device)
         #self.MSSIM = MultiscaleStructuralSimilarityIndexMeasure().to(self.device)
         
     def feed_data(self, LLI, HLI):
