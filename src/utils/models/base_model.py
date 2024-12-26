@@ -171,11 +171,11 @@ class BaseModel():
             #mssim = self.MSSIM(img1, img2).item()
 
             # LPIPS (expects [-1, 1] range)
-            img1 = 2 * img1 - 1
-            img2 = 2 * img2 - 1
+            img1_lpips = 2 * img1 - 1
+            img2_lpips = 2 * img2 - 1
 
             # LPIPS
-            LPIP_iter = self.L(img1, img2).item()
+            LPIP_iter = self.L(img1_lpips, img2_lpips).mean().item()  # Use mean() to average over batch
 
             return psnr, ssim, LPIP_iter
 
