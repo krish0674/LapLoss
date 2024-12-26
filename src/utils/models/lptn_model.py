@@ -114,7 +114,7 @@ class LPTNModel(BaseModel):
                 optim_params.append(v)
     
         self.optimizer_g = torch.optim.Adam(optim_params,
-                                                 lr=0.0001, weight_decay=1e-5, betas=[0.9, 0.99])                     
+                                                 lr=0.0001, weight_decay=1e-6, betas=[0.9, 0.99])                     
         self.optimizers.append(self.optimizer_g)
 
         # optimizer d
@@ -124,12 +124,12 @@ class LPTNModel(BaseModel):
         self.optimizers.append(self.optimizer_d1)
 
         self.optimizer_d2 = torch.optim.Adam(self.net_d2.parameters(),
-                                                 lr=0.0001, weight_decay=1e-5, betas=[0.9, 0.99])                     
+                                                 lr=0.0001, weight_decay=1e-6, betas=[0.9, 0.99])                     
 
         self.optimizers.append(self.optimizer_d2)
 
         self.optimizer_d3 = torch.optim.Adam(self.net_d3.parameters(),
-                                                 lr=0.0001, weight_decay=1e-5, betas=[0.9, 0.99])                     
+                                                 lr=0.0001, weight_decay=1e-7, betas=[0.9, 0.99])                     
 
         self.optimizers.append(self.optimizer_d3)
 
