@@ -22,7 +22,7 @@ class BaseModel():
         self.is_train = True
         self.P = PeakSignalNoiseRatio().to(self.device)
         self.Z = StructuralSimilarityIndexMeasure().to(self.device)
-        self.L = lpips(net_type='vgg', reduction='mean', normalize=True).to(self.device)
+        self.L = lpips.LPIPS(net_type='vgg', reduction='mean', normalize=True).to(self.device)
         #self.L = LearnedPerceptualImagePatchSimilarity(net_type='vgg', reduction='mean', normalize=True).to(self.device)
         #self.MSSIM = MultiscaleStructuralSimilarityIndexMeasure().to(self.device)
         
