@@ -4,6 +4,7 @@ from torch.nn.parallel import DataParallel, DistributedDataParallel
 from torchmetrics import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
 import lpips
+from losses.metrics import MultiScaleSSIM
 #from torchmetrics.image import MultiscaleStructuralSimilarityIndexMeasure
 
 import numpy as np
@@ -181,3 +182,32 @@ class BaseModel():
             LPIP_iter = self.L(img1_lpips, img2_lpips).mean().item()  # Use mean() to average over batch
 
             return psnr, ssim, LPIP_iter
+    
+    def calculate_metrics_test(self, img1, img2):
+            
+            img1 = img1.to(self.device)
+            img2 = img2.to(self.device)
+            img1 = img1.clamp_(0, 1)
+            img2 = img2.clamp_(0, 1)
+
+            # PSNR
+            psnr = self.P(img1, img2).item()
+
+            # SSIM
+            ssim = self.Z(img1, img2).item()
+
+            # MSSIM (Multi-scale SSIM)
+            #mssim = self.MSSIM(img1, img2).item()
+
+            # LPIPS (expects [-1, 1] range)
+            img1_lpips = 2 * img1 - 1
+            img2_lpips = 2 * img2 - 1
+
+            # LPIPS
+            LPIP_iter = self.L(img1_lpips, img2_lpips).mean().item() 
+
+            img1_rescaled = (img1 * 255).astype(np.uint8)
+            img2_rescaled = (img2 * 255).astype(np.uint8)
+            msssim_score = MultiScaleSSIM(img1_rescaled, img2_rescaled, max_val=1)
+
+            return psnr, ssim, LPIP_iter,msssim_score
