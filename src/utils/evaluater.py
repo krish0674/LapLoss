@@ -12,7 +12,7 @@ from torchsummary import summary
 
 
 
-def eval(root_dir, dset, kernel_loss_weight, lr,loss_weight = 2000,gan_type = 'standard', use_hypernet = True, device='cuda', nrb_top = 4, nrb_high = 5, nrb_low = 3,exposure='over'):
+def eval(root_dir, dset, kernel_loss_weight, lr,loss_weight = 2000,gan_type = 'standard', use_hypernet = True, device='cuda', nrb_top = 4, nrb_high = 5, nrb_low = 3,exposure='over',path='/kaggle/working/best_model_g.pth'):
 
     transform = get_transform(dataset='grad')
     
@@ -36,32 +36,30 @@ def eval(root_dir, dset, kernel_loss_weight, lr,loss_weight = 2000,gan_type = 's
         # Create the DataLoader
         test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
-    lptn_model = LPTNModel(loss_weight, kernel_loss_weight, device, lr, gan_type=gan_type, use_hypernet=use_hypernet, nrb_high=nrb_high, nrb_low=nrb_low, nrb_top=nrb_top)
-    summary(lptn_model.net_g , input_size=(3, 608, 896))
+    lptn_model = LPTNModel(loss_weight, kernel_loss_weight, device, lr, gan_type=gan_type, nrb_high=nrb_high, nrb_low=nrb_low, nrb_top=nrb_top,levels=[0,1,2],weights=[0.5,0.3,0.2])
+    # summary(lptn_model.net_g , input_size=(3, 608, 896))
     total_loss = []
     psnr_test,ssim_test, lpips_test = 0,0,0
     psnr_test,ssim_test, lpips_test = 0,0,0
 
-    with tqdm(
-        test_loader
-    ) as loader:
-        for iteration,batch_data in enumerate(loader):
-            x,y = batch_data
-            lptn_model.net_g.eval()
-            lptn_model.feed_data(x,y)
-            lptn_model.optimize_parameters(iteration)
-            break
+    # with tqdm(
+    #     test_loader
+    # ) as loader:
+    #     for iteration,batch_data in enumerate(loader):
+    #         x,y = batch_data
+    #         lptn_model.net_g.eval()
+    #         lptn_model.feed_data(x,y)
+    #         lptn_model.optimize_parameters(iteration)
+    #         break
         
-    psnr_test_max = [0,0]
-    flag = 0
+    # psnr_test_max = [0,0]
+    # flag = 0
 
     with tqdm(
         test_loader
     ) as loader:
-        if(os.path.exists('./best_model_g.pth')):
-            lptn_model.load_network('./best_model_g.pth', device=device)
-        else:
-            lptn_model.load_network('/kaggle/input/besthypernettruemodel/best_model_g.pth', device=device)
+
+        lptn_model.load_network(path, device=device)
         for iteration,batch_data in enumerate(loader):
             x,y = batch_data
             
@@ -69,7 +67,7 @@ def eval(root_dir, dset, kernel_loss_weight, lr,loss_weight = 2000,gan_type = 's
             
             lptn_model.feed_data(x,y)
             
-            loss_iter,kernel_los_iter,psnr_test_iter,ssim_test_iter, lpips_test_iter = lptn_model.optimize_parameters(iteration)
+            loss_iter,psnr_test_iter,ssim_test_iter, lpips_test_iter = lptn_model.optimize_parameters(iteration)
             lptn_model.visualise(iteration=iteration)
             flag = 0
             
@@ -101,5 +99,6 @@ def eval_model(configs):
         configs['nrb_top'],
         configs['nrb_high'],
         configs['nrb_low'],
-        configs['exposure']
+        configs['exposure'],
+        configs['model_path']
         )

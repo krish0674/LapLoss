@@ -18,7 +18,8 @@ def main(args):
         'sf_path' : args.sf_path,
         'nrb_top' :args.nrb_top,
         'nrb_high' : args.nrb_high,
-        'nrb_low' : args.nrb_low
+        'nrb_low' : args.nrb_low,
+        'model_path' : args.model_path
     }
 
     eval_model(config)
@@ -40,5 +41,7 @@ if __name__ == '__main__':
     parser.add_argument('--nrb_low', type=int, required=False)
     parser.add_argument('--nrb_high', type=int, required=False)
     parser.add_argument('--nrb_top', type=int, required=False)
+    parser.add_argument('--model_path', type=str, required=False, default='/kaggle/working/best_model_g.pth')
+
     arguments = parser.parse_args()
     main(arguments)
