@@ -193,7 +193,7 @@ class LPTNModel(BaseModel):
             gt = pyr_gt[level]
             pred = pyr_pred[level]
             discriminator = discriminators[level]
-            print(f"at level {level} shape is {gt.shape}")
+            # print(f"at level {level} shape is {gt.shape}")
             # Pixel loss at this level
             l_pix = self.MLoss(pred, gt).to(self.device)
 
