@@ -12,26 +12,24 @@ from torchsummary import summary
 
 
 
-def eval(root_dir, dset, kernel_loss_weight, lr,loss_weight = 2000,gan_type = 'standard', use_hypernet = True, device='cuda', nrb_top = 4, nrb_high = 5, nrb_low = 3,exposure='over',path='/kaggle/working/best_model_g.pth'):
+def eval(root_dir, lr,loss_weight = 2000,gan_type = 'standard' ,device='cuda', nrb_top = 4, nrb_high = 5, nrb_low = 3,exposure='over',path='/kaggle/working/best_model_g.pth'):
 
-    transform = get_transform(dataset='grad')
     
-    if dset == 'sice':
-        if exposure == 'over' or exposure=='under':
-            # Define testing indices
-            testing_indices = [
-                *range(4, 24), 28, 31, 33, 34, 
-                *range(37, 40), *range(46, 53), 
-                *range(55, 70), *range(75, 80), 
-                *range(100, 104)
-            ]
+    if exposure == 'over' or exposure=='under':
+        # Define testing indices
+        testing_indices = [
+            *range(4, 24), 28, 31, 33, 34, 
+            *range(37, 40), *range(46, 53), 
+            *range(55, 70), *range(75, 80), 
+            *range(100, 104)
+        ]
 
-            # Initialize the test dataset
-            test_dataset = SICETestDataset(
-                root_dir=r'/kaggle/input/sicedataset',
-                exposure_type=exposure,
-                indices=testing_indices
-            )
+        # Initialize the test dataset
+        test_dataset = SICETestDataset(
+            root_dir=r'/kaggle/input/sicedataset',
+            exposure_type=exposure,
+            indices=testing_indices
+        )
 
         # Create the DataLoader
         test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
@@ -89,12 +87,9 @@ def eval(root_dir, dset, kernel_loss_weight, lr,loss_weight = 2000,gan_type = 's
 
 def eval_model(configs):
     eval(configs['root_dir'],
-        configs['dset'],
-        configs['kernel_loss_weight'], 
         configs['lr'],
         configs['loss_weight'],
         configs['gan_type'],
-        configs['use_hypernet'],
         configs['device'],
         configs['nrb_top'],
         configs['nrb_high'],
