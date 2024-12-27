@@ -7,7 +7,7 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from torch.utils.data import DataLoader, Subset
 from .models.lptn_model import LPTNModel
-from torchsummary import summary
+# from torchsummary import summary
 
 
 
