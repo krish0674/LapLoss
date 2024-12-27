@@ -28,7 +28,14 @@ def get_training_augmentation():
         albu.VerticalFlip(p=0.5),
     ]
     return albu.Compose(train_transform, additional_targets={'image1':'image'}, is_check_shapes=False)
-    
+
+def get_testing_augmentation():
+    transform = [
+        albu.Resize(608, 896, interpolation=cv2.INTER_LINEAR, always_apply=True),
+    ]
+    return albu.Compose(transform, additional_targets={'image1': 'image'}, is_check_shapes=False)
+
+  
 
 class SICETrainDataset(BaseDataset):
     def __init__(self, root_dir, transform=None, augmentation=None, exposure_type="both"):
@@ -119,11 +126,12 @@ import torch
 import matplotlib.pyplot as plt
 
 class SICETestDataset(Dataset):
-    def __init__(self, root_dir, exposure_type="over", indices=None):
+    def __init__(self, root_dir,aug, exposure_type="over", indices=None):
         self.root_dir = root_dir
         self.exposure_type = exposure_type
         self.indices = indices if indices else []
         self.data = []
+        self.augumentation=get_testing_augmentation()
 
         part_path = os.path.join(root_dir, "Dataset_Part1/Dataset_Part1")
         label_path = os.path.join(part_path, "Label")
@@ -188,6 +196,10 @@ class SICETestDataset(Dataset):
         input_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB)
 
         # NORMALIZATION
+        if self.augmentation:
+            augmented = self.augmentation(image1=label_image, image=input_image)
+            label_image, input_image = augmented['image1'], augmented['image']
+
         input_image = input_image / 255.0
         label_image = label_image / 255.0
 

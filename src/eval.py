@@ -43,7 +43,7 @@ if __name__ == '__main__':
     parser.add_argument('--nrb_high', type=int, required=False,default=3)
     parser.add_argument('--nrb_top', type=int, required=False,default=3)
     parser.add_argument('--exposure', type=str, required=False,default='over')
-    parser.add_argument('--model_path', type=str, required=False, default='/kaggle/working/best_model_g.pth')
+    parser.add_argument('--model_path', type=str, required=False, default='/kaggle/working/repo/src/best_model_g.pth')
 
     arguments = parser.parse_args()
     main(arguments)
