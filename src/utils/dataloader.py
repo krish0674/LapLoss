@@ -257,8 +257,8 @@ class SICEGradTest(BaseDataset):
             input_image = cv2.rotate(input_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
         #RESIZE + FLIP AUGMENTATION
-        if self.augmentation:
-            augmented = self.augmentation(image1=label_image, image=input_image)
+        if self.augumentation:
+            augmented = self.augumentation(image1=label_image, image=input_image)
             label_image, input_image = augmented['image1'], augmented['image']
         
         #NORMALISATION
@@ -322,8 +322,8 @@ class SICEMixTest(BaseDataset):
             input_image = cv2.rotate(input_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
         #RESIZE + FLIP AUGMENTATION
-        if self.augmentation:
-            augmented = self.augmentation(image1=label_image, image=input_image)
+        if self.augumentation:
+            augmented = self.augumentation(image1=label_image, image=input_image)
             label_image, input_image = augmented['image1'], augmented['image']
         
         #NORMALISATION
