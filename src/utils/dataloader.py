@@ -196,8 +196,8 @@ class SICETestDataset(Dataset):
         input_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB)
 
         # NORMALIZATION
-        if self.augmentation:
-            augmented = self.augmentation(image1=label_image, image=input_image)
+        if self.augumentation:
+            augmented = self.augumentation(image1=label_image, image=input_image)
             label_image, input_image = augmented['image1'], augmented['image']
 
         input_image = input_image / 255.0
