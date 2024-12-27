@@ -126,7 +126,7 @@ import torch
 import matplotlib.pyplot as plt
 
 class SICETestDataset(Dataset):
-    def __init__(self, root_dir,aug, exposure_type="over", indices=None):
+    def __init__(self, root_dir, exposure_type="over", indices=None):
         self.root_dir = root_dir
         self.exposure_type = exposure_type
         self.indices = indices if indices else []
