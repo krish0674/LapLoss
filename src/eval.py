@@ -35,7 +35,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, required=False, default=1e-4)
     parser.add_argument('--loss_weight', type=float, required=False, default=2000)
     parser.add_argument('--kernel_loss_weight', type=float, required=False, default=100)
-    parser.add_argument('--gan_type', type=str, required=False)
+    parser.add_argument('--gan_type', type=str, required=False,default='vanilla')
     parser.add_argument('--use_hypernet', type=bool, required=False, default=True)
     parser.add_argument('--key', type=str, required=False, default='3adf824888485fb1de047a4e9bab54143ddf0cd9')
     parser.add_argument('--sf_path', type=str, required=False, default='./best_model_g.pth')
