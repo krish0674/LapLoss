@@ -1,5 +1,5 @@
 import wandb
-from .dataloader import SICETestDataset, get_transform
+from .dataloader import SICETestDataset
 import torch
 from tqdm import tqdm as tqdm
 import os
