@@ -209,3 +209,133 @@ class SICETestDataset(Dataset):
 
         return input_image, label_image
 
+    
+class SICEGradTest(BaseDataset):
+    def __init__(self, root_dir, transform=None, augmentation=None):
+        self.root_dir = root_dir
+        self.input_dir = os.path.join(root_dir, 'SICE_Grad')
+        self.label_dir = os.path.join(root_dir, 'SICE_Reshape')
+        self.file_names = [f for f in os.listdir(self.input_dir) if f.lower().endswith('.jpg')]
+        self.transform = transform
+        self.augumentation=get_testing_augmentation()
+        # self.file_names = self.file_names[530:]
+
+    def __len__(self):
+        return len(self.file_names)
+    
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+        
+        input_name = os.path.join(self.input_dir, self.file_names[idx])
+        base_name = os.path.splitext(self.file_names[idx])[0]
+        
+        label_name_jpg_upper = os.path.join(self.label_dir, base_name + '.JPG')
+        label_name_jpg_lower = os.path.join(self.label_dir, base_name + '.jpg')
+        label_name_png = os.path.join(self.label_dir, base_name + '.PNG')
+        
+        if os.path.exists(label_name_jpg_upper):
+            label_name = label_name_jpg_upper
+        elif os.path.exists(label_name_jpg_lower):
+            label_name = label_name_jpg_lower
+        elif os.path.exists(label_name_png):
+            label_name = label_name_png
+        else:
+            raise FileNotFoundError(f"No corresponding label image found for {input_name}")
+        
+        #READING IMAGE
+        label_image = cv2.imread(label_name)
+        input_image = cv2.imread(input_name)
+        
+        #CHANGING COLORSPACE
+        label_image = cv2.cvtColor(label_image, cv2.COLOR_BGR2RGB)
+        input_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB)
+
+        #ROTATING PORTRAIT IMAGES
+        if label_image.shape[0] > label_image.shape[1]:
+            label_image = cv2.rotate(label_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            input_image = cv2.rotate(input_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+        #RESIZE + FLIP AUGMENTATION
+        if self.augmentation:
+            augmented = self.augmentation(image1=label_image, image=input_image)
+            label_image, input_image = augmented['image1'], augmented['image']
+        
+        #NORMALISATION
+        input_image = input_image / 255.0
+        label_image = label_image / 255.0
+        
+        #STANDARDISATION
+        # if self.transform:
+        #     input_image = self.transform(image=input_image)['image']
+        
+        #CHANGING DIMSPACE
+        input_image = torch.tensor(input_image, dtype=torch.float32).permute(2, 0, 1)
+        label_image = torch.tensor(label_image, dtype=torch.float32).permute(2, 0, 1)
+        
+        return input_image, label_image
+    
+class SICEMixTest(BaseDataset):
+    def __init__(self, root_dir, transform=None, augmentation=None):
+        self.root_dir = root_dir
+        self.input_dir = os.path.join(root_dir, 'SICE_Mix')
+        self.label_dir = os.path.join(root_dir, 'SICE_Reshape')
+        self.file_names = [f for f in os.listdir(self.input_dir) if f.lower().endswith('.jpg')]
+        self.transform = transform
+        self.augumentation=get_testing_augmentation()
+        # self.file_names = self.file_names[530:]
+
+    def __len__(self):
+        return len(self.file_names)
+    
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+        
+        input_name = os.path.join(self.input_dir, self.file_names[idx])
+        base_name = os.path.splitext(self.file_names[idx])[0]
+        
+        label_name_jpg_upper = os.path.join(self.label_dir, base_name + '.JPG')
+        label_name_jpg_lower = os.path.join(self.label_dir, base_name + '.jpg')
+        label_name_png = os.path.join(self.label_dir, base_name + '.PNG')
+        
+        if os.path.exists(label_name_jpg_upper):
+            label_name = label_name_jpg_upper
+        elif os.path.exists(label_name_jpg_lower):
+            label_name = label_name_jpg_lower
+        elif os.path.exists(label_name_png):
+            label_name = label_name_png
+        else:
+            raise FileNotFoundError(f"No corresponding label image found for {input_name}")
+        
+        #READING IMAGE
+        label_image = cv2.imread(label_name)
+        input_image = cv2.imread(input_name)
+        
+        #CHANGING COLORSPACE
+        label_image = cv2.cvtColor(label_image, cv2.COLOR_BGR2RGB)
+        input_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB)
+
+        #ROTATING PORTRAIT IMAGES
+        if label_image.shape[0] > label_image.shape[1]:
+            label_image = cv2.rotate(label_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            input_image = cv2.rotate(input_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+
+        #RESIZE + FLIP AUGMENTATION
+        if self.augmentation:
+            augmented = self.augmentation(image1=label_image, image=input_image)
+            label_image, input_image = augmented['image1'], augmented['image']
+        
+        #NORMALISATION
+        input_image = input_image / 255.0
+        label_image = label_image / 255.0
+        
+        #STANDARDISATION
+        # if self.transform:
+        #     input_image = self.transform(image=input_image)['image']
+        
+        #CHANGING DIMSPACE
+        input_image = torch.tensor(input_image, dtype=torch.float32).permute(2, 0, 1)
+        label_image = torch.tensor(label_image, dtype=torch.float32).permute(2, 0, 1)
+        
+        return input_image, label_image
