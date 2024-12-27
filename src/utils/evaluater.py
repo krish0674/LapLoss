@@ -1,5 +1,5 @@
 import wandb
-from .dataloader import SICETestDataset
+from .dataloader import SICETestDataset,SICEGradTest,SICEMixTest
 import torch
 from tqdm import tqdm as tqdm
 import os
@@ -14,25 +14,22 @@ from .models.lptn_model import LPTNModel
 
 def eval(root_dir, lr,loss_weight = 2000,gan_type = 'standard' ,device='cuda', nrb_top = 4, nrb_high = 5, nrb_low = 3,exposure='over',path='/kaggle/working/best_model_g.pth'):
 
-    
-    if exposure == 'over' or exposure=='under':
-        # Define testing indices
-        testing_indices = [
-            *range(4, 24), 28, 31, 33, 34, 
-            *range(37, 40), *range(46, 53), 
-            *range(55, 70), *range(75, 80), 
-            *range(100, 104)
-        ]
+    testing_indices = [
+        *range(4, 24), 28, 31, 33, 34, 
+        *range(37, 40), *range(46, 53), 
+        *range(55, 70), *range(75, 80), 
+        *range(100, 104)
+    ]
 
-        # Initialize the test dataset
-        test_dataset = SICETestDataset(
-            root_dir=r'/kaggle/input/sicedataset',
-            exposure_type=exposure,
-            indices=testing_indices
-        )
+    # Initialize the test dataset
+    test_dataset = SICETestDataset(
+        root_dir=r'/kaggle/input/sicedataset',
+        exposure_type='over',
+        indices=testing_indices
+    )
 
-        # Create the DataLoader
-        test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+    # Create the DataLoader
+    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
     lptn_model = LPTNModel(loss_weight, device, lr, gan_type=gan_type, nrb_high=nrb_high, nrb_low=nrb_low, nrb_top=nrb_top,levels=[0,1,2],weights=[0.5,0.3,0.2])
     # summary(lptn_model.net_g , input_size=(3, 608, 896))
@@ -40,19 +37,7 @@ def eval(root_dir, lr,loss_weight = 2000,gan_type = 'standard' ,device='cuda', n
     psnr_test,ssim_test, lpips_test = 0,0,0
     psnr_test,ssim_test, lpips_test = 0,0,0
 
-    # with tqdm(
-    #     test_loader
-    # ) as loader:
-    #     for iteration,batch_data in enumerate(loader):
-    #         x,y = batch_data
-    #         lptn_model.net_g.eval()
-    #         lptn_model.feed_data(x,y)
-    #         lptn_model.optimize_parameters(iteration)
-    #         break
-        
-    # psnr_test_max = [0,0]
-    # flag = 0
-
+ 
     with tqdm(
         test_loader
     ) as loader:
@@ -80,10 +65,156 @@ def eval(root_dir, lr,loss_weight = 2000,gan_type = 'standard' ,device='cuda', n
     lpips_test /= (iteration+1)
     avg_loss = sum(total_loss)/len(total_loss)
 
-    print(f'TEST LPIPS {lpips_test}')
-    print(f'TEST PSNR {psnr_test}')
-    print(f'TEST SSIM {ssim_test}')
+    print(f'TEST LPIPS over {lpips_test}')
+    print(f'TEST PSNR over  {psnr_test}')
+    print(f'TEST SSIM over {ssim_test}')
 
+    testing_indices = [
+        *range(4, 24), 28, 31, 33, 34, 
+        *range(37, 40), *range(46, 53), 
+        *range(55, 70), *range(75, 80), 
+        *range(100, 104)
+    ]
+
+    # Initialize the test dataset
+    test_dataset = SICETestDataset(
+        root_dir=r'/kaggle/input/sicedataset',
+        exposure_type='under',
+        indices=testing_indices
+    )
+
+    # Create the DataLoader
+    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+
+    lptn_model = LPTNModel(loss_weight, device, lr, gan_type=gan_type, nrb_high=nrb_high, nrb_low=nrb_low, nrb_top=nrb_top,levels=[0,1,2],weights=[0.5,0.3,0.2])
+    # summary(lptn_model.net_g , input_size=(3, 608, 896))
+    total_loss = []
+    psnr_test,ssim_test, lpips_test = 0,0,0
+    psnr_test,ssim_test, lpips_test = 0,0,0
+
+ 
+    with tqdm(
+        test_loader
+    ) as loader:
+
+        lptn_model.load_network(path, device=device)
+        for iteration,batch_data in enumerate(loader):
+            x,y = batch_data
+            
+            lptn_model.net_g.eval()
+            
+            lptn_model.feed_data(x,y)
+            
+            loss_iter,psnr_test_iter,ssim_test_iter, lpips_test_iter = lptn_model.optimize_parameters(iteration)
+            lptn_model.visualise(iteration=iteration)
+            flag = 0
+            
+            lpips_test += lpips_test_iter
+            psnr_test += psnr_test_iter
+            ssim_test += ssim_test_iter
+            total_loss.append(loss_iter)
+    
+    lpips_test /=(iteration+1)
+    psnr_test /= (iteration+1)
+    ssim_test /= (iteration+1)
+    lpips_test /= (iteration+1)
+    avg_loss = sum(total_loss)/len(total_loss)
+
+    print(f'TEST LPIPS under {lpips_test}')
+    print(f'TEST PSNR under  {psnr_test}')
+    print(f'TEST SSIM under {ssim_test}')
+
+    # Initialize the test dataset
+    test_dataset = SICEGradTest(
+        root_dir=r'/kaggle/input/sice-grad-and-sice-mix',
+   )
+
+    # Create the DataLoader
+    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+
+    lptn_model = LPTNModel(loss_weight, device, lr, gan_type=gan_type, nrb_high=nrb_high, nrb_low=nrb_low, nrb_top=nrb_top,levels=[0,1,2],weights=[0.5,0.3,0.2])
+    # summary(lptn_model.net_g , input_size=(3, 608, 896))
+    total_loss = []
+    psnr_test,ssim_test, lpips_test = 0,0,0
+    psnr_test,ssim_test, lpips_test = 0,0,0
+
+ 
+    with tqdm(
+        test_loader
+    ) as loader:
+
+        lptn_model.load_network(path, device=device)
+        for iteration,batch_data in enumerate(loader):
+            x,y = batch_data
+            
+            lptn_model.net_g.eval()
+            
+            lptn_model.feed_data(x,y)
+            
+            loss_iter,psnr_test_iter,ssim_test_iter, lpips_test_iter = lptn_model.optimize_parameters(iteration)
+            lptn_model.visualise(iteration=iteration)
+            flag = 0
+            
+            lpips_test += lpips_test_iter
+            psnr_test += psnr_test_iter
+            ssim_test += ssim_test_iter
+            total_loss.append(loss_iter)
+    
+    lpips_test /=(iteration+1)
+    psnr_test /= (iteration+1)
+    ssim_test /= (iteration+1)
+    lpips_test /= (iteration+1)
+    avg_loss = sum(total_loss)/len(total_loss)
+
+    print(f'TEST LPIPS grad {lpips_test}')
+    print(f'TEST PSNR grad  {psnr_test}')
+    print(f'TEST SSIM grad {ssim_test}')
+
+    # Initialize the test dataset
+    test_dataset = SICEMixTest(
+        root_dir=r'/kaggle/input/sicedataset',
+    )
+
+    # Create the DataLoader
+    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+
+    lptn_model = LPTNModel(loss_weight, device, lr, gan_type=gan_type, nrb_high=nrb_high, nrb_low=nrb_low, nrb_top=nrb_top,levels=[0,1,2],weights=[0.5,0.3,0.2])
+    # summary(lptn_model.net_g , input_size=(3, 608, 896))
+    total_loss = []
+    psnr_test,ssim_test, lpips_test = 0,0,0
+    psnr_test,ssim_test, lpips_test = 0,0,0
+
+ 
+    with tqdm(
+        test_loader
+    ) as loader:
+
+        lptn_model.load_network(path, device=device)
+        for iteration,batch_data in enumerate(loader):
+            x,y = batch_data
+            
+            lptn_model.net_g.eval()
+            
+            lptn_model.feed_data(x,y)
+            
+            loss_iter,psnr_test_iter,ssim_test_iter, lpips_test_iter = lptn_model.optimize_parameters(iteration)
+            lptn_model.visualise(iteration=iteration)
+            flag = 0
+            
+            lpips_test += lpips_test_iter
+            psnr_test += psnr_test_iter
+            ssim_test += ssim_test_iter
+            total_loss.append(loss_iter)
+    
+    lpips_test /=(iteration+1)
+    psnr_test /= (iteration+1)
+    ssim_test /= (iteration+1)
+    lpips_test /= (iteration+1)
+    avg_loss = sum(total_loss)/len(total_loss)
+
+    print(f'TEST LPIPS mix {lpips_test}')
+    print(f'TEST PSNR mix  {psnr_test}')
+    print(f'TEST SSIM mix {ssim_test}')
 
 def eval_model(configs):
     eval(configs['root_dir'],
