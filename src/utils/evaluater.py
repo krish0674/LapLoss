@@ -126,7 +126,7 @@ def eval(root_dir, lr,loss_weight = 2000,gan_type = 'standard' ,device='cuda', n
 
     # Initialize the test dataset
     test_dataset = SICEGradTest(
-        root_dir=r'/kaggle/input/sice-grad-and-sice-mix',
+        root_dir=r'/kaggle/input/sice-grad-and-sice-mix/SICEGM',
    )
 
     # Create the DataLoader
@@ -172,7 +172,7 @@ def eval(root_dir, lr,loss_weight = 2000,gan_type = 'standard' ,device='cuda', n
 
     # Initialize the test dataset
     test_dataset = SICEMixTest(
-        root_dir=r'/kaggle/input/sicedataset',
+        root_dir=r'/kaggle/input/sice-grad-and-sice-mix/SICEGM',
     )
 
     # Create the DataLoader
