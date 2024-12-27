@@ -21,7 +21,7 @@ loss_module = importlib.import_module('utils.models.losses')
 
 class LPTNModel(BaseModel):
 
-    def __init__(self, loss_weight, device, lr, gan_type='standard', nrb_low=3, nrb_high=5, nrb_top=4):
+    def __init__(self, loss_weight, device, lr, gan_type='standard', nrb_low=3, nrb_high=5, nrb_top=4,levels=[0,1,2],weights=[4/7,2/7,1/7]):
         super(LPTNModel, self).__init__(loss_weight, device, lr)
 
         self.gan_type = gan_type
@@ -29,7 +29,8 @@ class LPTNModel(BaseModel):
         self.nrb_high = nrb_high
         self.nrb_top = nrb_top
         self.num_high = 2  
-
+        self.levels=levels
+        self.weights=weights
         #define multiple here 
         # creating discriminator object
         self.device = torch.device(device)
@@ -167,25 +168,33 @@ class LPTNModel(BaseModel):
 
         self.pyr_gt=self.lap_pyramid.pyramid_decom(self.HLI)
 
-    def calculate_weighted_loss(self, pyr_gt, pyr_pred, discriminators):
+    def calculate_weighted_loss(self, pyr_gt, pyr_pred, discriminators, levels, weights):
         """
-        Calculate the weighted loss at each pyramid level with multiple discriminators.
+        Calculate the weighted loss at specified pyramid levels with multiple discriminators.
         Args:
             pyr_gt: Ground truth pyramid levels (list of tensors).
             pyr_pred: Predicted pyramid levels (list of tensors).
             discriminators: List of discriminator models, one for each pyramid level.
+            levels: List of pyramid levels to consider (e.g., [0, 1, 2]).
+            weights: List of weights corresponding to the specified levels.
         Returns:
             total_loss: Weighted total loss.
             loss_dict: Dictionary of individual losses at each level.
         """
-        weights = [4/7, 2/7, 1/7]  # Define weights for each level
         total_loss = 0.0
+        loss_dict = {}
 
-        for i, (gt, pred, discriminator, weight) in enumerate(zip(pyr_gt, pyr_pred, discriminators, weights)):
+        # Iterate only through the specified levels
+        for level, weight in zip(levels, weights):
+            if level >= len(pyr_gt) or level >= len(pyr_pred) or level >= len(discriminators):
+                raise ValueError(f"Specified level {level} exceeds available pyramid levels.")
+            
+            # Get the ground truth, predicted, and discriminator for the current level
+            gt = pyr_gt[level]
+            pred = pyr_pred[level]
+            discriminator = discriminators[level]
+
             # Pixel loss at this level
-            # print(f"shape of gt at lveel {i} is {gt.shape}")
-            # print(f"shape of pred at lveel {i} is {pred.shape}")
-
             l_pix = self.MLoss(pred, gt).to(self.device)
 
             # GAN loss at this level
@@ -196,7 +205,11 @@ class LPTNModel(BaseModel):
             level_loss = weight * (l_pix + l_gan)
             total_loss += level_loss
 
-        return total_loss
+            # Store individual level loss
+            # loss_dict[f'level_{level}'] = level_loss.item()
+
+        return total_loss #, loss_dict
+
 
     def optimize_parameters(self, current_iter):
         torch.autograd.set_detect_anomaly(True)
@@ -218,7 +231,7 @@ class LPTNModel(BaseModel):
             
             # pixel loss
             discriminators = [self.net_d1, self.net_d2, self.net_d3]
-            l_g_total = self.calculate_weighted_loss(self.pyr_gt, pyr_pred, discriminators)
+            l_g_total = self.calculate_weighted_loss(self.pyr_gt, pyr_pred, discriminators,self.levels,self.weights)
             # Backpropagation and optimization
             l_g_total.backward()
             self.optimizer_g.step()

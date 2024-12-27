@@ -23,7 +23,9 @@ def train(epochs,
           lr=1e-4,
           loss_weight = 2000,
           gan_type = 'standard',
-          exposure='over'
+          exposure='over',
+          levels=[0,1,2],
+          weights=[4/7,2/7,1/7]
           ):
     
     # transform = get_transform(dataset='grad')
@@ -49,7 +51,7 @@ def train(epochs,
     valid_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
 
-    lptn_model = LPTNModel(loss_weight, device, lr, gan_type=gan_type, nrb_high=nrb_high, nrb_low=nrb_low, nrb_top=nrb_top)
+    lptn_model = LPTNModel(loss_weight, device, lr, gan_type=gan_type, nrb_high=nrb_high, nrb_low=nrb_low, nrb_top=nrb_top,levels=levels,weights=weights)
 
     # a,b = train_dataset.__getitem__(0)
     # print("LLI image",a.shape)
@@ -144,5 +146,7 @@ def train_model(configs):
         configs['lr'],
         configs['loss_weight'],
         configs['gan_type'],
-        configs['exposure']
+        configs['exposure'],
+        configs['levels'],
+        configs['weights']
         )

@@ -3,6 +3,9 @@ import torch
 from torch.nn.parallel import DataParallel, DistributedDataParallel
 from torchmetrics import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
+import lpips
+#from torchmetrics.image import MultiscaleStructuralSimilarityIndexMeasure
+
 import numpy as np
 
 from utils.models import lr_scheduler as lr_scheduler
@@ -19,8 +22,11 @@ class BaseModel():
         self.is_train = True
         self.P = PeakSignalNoiseRatio().to(self.device)
         self.Z = StructuralSimilarityIndexMeasure().to(self.device)
-        self.L = LearnedPerceptualImagePatchSimilarity(net_type='vgg', reduction='mean', normalize=True).to(self.device)
-
+        # Initialize LPIPS without extra arguments
+        self.L = lpips.LPIPS(net='vgg').to(self.device)  # Specify net if needed (default is 'alex')
+        #self.L = LearnedPerceptualImagePatchSimilarity(net_type='vgg', reduction='mean', normalize=True).to(self.device)
+        #self.MSSIM = MultiscaleStructuralSimilarityIndexMeasure().to(self.device)
+        
     def feed_data(self, LLI, HLI):
         pass
 
@@ -153,16 +159,25 @@ class BaseModel():
         
     def calculate_metrics(self, img1, img2):
             
+            img1 = img1.to(self.device)
+            img2 = img2.to(self.device)
             img1 = img1.clamp_(0, 1)
             img2 = img2.clamp_(0, 1)
 
-            LPIP_iter = self.L(img1,img2).to(self.device)
-            # img1 = img1
-            # img1 = img1.round().int()
-            # img1 = img1.float()
+            # PSNR
+            psnr = self.P(img1, img2).item()
 
-            # img2 = img2
-            # # img2 = img2.round().int()
-            # # img2 = img2.float()
+            # SSIM
+            ssim = self.Z(img1, img2).item()
 
-            return self.P(img1, img2).to(self.device), self.Z(img1, img2).to(self.device), LPIP_iter        
+            # MSSIM (Multi-scale SSIM)
+            #mssim = self.MSSIM(img1, img2).item()
+
+            # LPIPS (expects [-1, 1] range)
+            img1_lpips = 2 * img1 - 1
+            img2_lpips = 2 * img2 - 1
+
+            # LPIPS
+            LPIP_iter = self.L(img1_lpips, img2_lpips).mean().item()  # Use mean() to average over batch
+
+            return psnr, ssim, LPIP_iter
