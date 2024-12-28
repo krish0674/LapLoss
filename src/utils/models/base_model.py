@@ -226,6 +226,6 @@ class BaseModel():
 
             img1_rescaled = (img1 * 255).astype(np.uint8)
             img2_rescaled = (img2 * 255).astype(np.uint8)
-            msssim_score = MultiScaleSSIM(img1_rescaled, img2_rescaled, max_val=1)
+            msssim_score = MultiScaleSSIM(img1_rescaled, img2_rescaled)
 
             return psnr, ssim, LPIP_iter,msssim_score
