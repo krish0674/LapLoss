@@ -165,6 +165,12 @@ class BaseModel():
             img1 = img1.clamp_(0, 1)
             img2 = img2.clamp_(0, 1)
 
+            img1 = img1*255
+            img1 = img1.int().float()
+
+            img2 = img2*255
+            img2 = img2.int().float()
+
             # PSNR
             psnr = self.P(img1, img2).item()
 
@@ -173,6 +179,9 @@ class BaseModel():
 
             # MSSIM (Multi-scale SSIM)
             #mssim = self.MSSIM(img1, img2).item()
+
+            img1 = img1/255
+            img2 = img2/255
 
             # LPIPS (expects [-1, 1] range)
             img1_lpips = 2 * img1 - 1
@@ -190,6 +199,12 @@ class BaseModel():
             img1 = img1.clamp_(0, 1)
             img2 = img2.clamp_(0, 1)
 
+            img1 = img1*255
+            img1 = img1.int().float()
+
+            img2 = img2*255
+            img2 = img2.int().float()
+
             # PSNR
             psnr = self.P(img1, img2).item()
 
@@ -198,6 +213,9 @@ class BaseModel():
 
             # MSSIM (Multi-scale SSIM)
             #mssim = self.MSSIM(img1, img2).item()
+
+            img1 = img1/255
+            img2 = img2/255
 
             # LPIPS (expects [-1, 1] range)
             img1_lpips = 2 * img1 - 1
