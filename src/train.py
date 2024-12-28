@@ -33,6 +33,7 @@ def main(args):
             'best_epoch': 0,
             'loss_weight': args.loss_weight,
             'gan_type': args.gan_type,
+            'branch': 'SICE',
         },
         allow_val_change=True,
     )
