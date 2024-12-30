@@ -88,3 +88,121 @@ def MultiScaleSSIM(img1, img2, max_val=255, filter_size=11, filter_sigma=1.5, k1
     return (np.prod(mcs[0:levels - 1]**weights[0:levels - 1]) *
             (mssim[levels - 1]**weights[levels - 1]))
 
+from collections import OrderedDict
+from itertools import chain
+from typing import Sequence
+
+import torch
+import torch.nn as nn
+from torchvision import models
+
+
+def normalize_activation(x: torch.Tensor, eps: float = 1e-10) -> torch.Tensor:
+    """Normalize activations to unit length."""
+    norm_factor = torch.sqrt(torch.sum(x ** 2, dim=1, keepdim=True))
+    return x / (norm_factor + eps)
+
+
+def get_state_dict(net_type: str = 'alex', version: str = '0.1') -> OrderedDict:
+    """Download and prepare the state dictionary for the specified network."""
+    url = (
+        f"https://raw.githubusercontent.com/richzhang/PerceptualSimilarity/"
+        f"master/lpips/weights/v{version}/{net_type}.pth"
+    )
+    state_dict = torch.hub.load_state_dict_from_url(
+        url, progress=True, map_location="cuda" if torch.cuda.is_available() else "cpu"
+    )
+    return OrderedDict((k.replace("lin", "").replace("model.", ""), v) for k, v in state_dict.items())
+
+
+class BaseNet(nn.Module):
+    """Base network class for LPIPS."""
+    def __init__(self):
+        super().__init__()
+        self.register_buffer("mean", torch.Tensor([-.030, -.088, -.188])[None, :, None, None])
+        self.register_buffer("std", torch.Tensor([.458, .448, .450])[None, :, None, None])
+
+    def set_requires_grad(self, state: bool):
+        for param in chain(self.parameters(), self.buffers()):
+            param.requires_grad = state
+
+    def z_score(self, x: torch.Tensor) -> torch.Tensor:
+        return (x - self.mean) / self.std
+
+    def forward(self, x: torch.Tensor):
+        x = self.z_score(x)
+        output = []
+        for i, (_, layer) in enumerate(self.layers._modules.items(), 1):
+            x = layer(x)
+            if i in self.target_layers:
+                output.append(normalize_activation(x))
+            if len(output) == len(self.target_layers):
+                break
+        return output
+
+
+class AlexNet(BaseNet):
+    """AlexNet for LPIPS."""
+    def __init__(self):
+        super().__init__()
+        self.layers = models.alexnet(pretrained=True).features
+        self.target_layers = [2, 5, 8, 10, 12]
+        self.n_channels_list = [64, 192, 384, 256, 256]
+        self.set_requires_grad(False)
+
+
+class SqueezeNet(BaseNet):
+    """SqueezeNet for LPIPS."""
+    def __init__(self):
+        super().__init__()
+        self.layers = models.squeezenet1_1(pretrained=True).features
+        self.target_layers = [2, 5, 8, 10, 11, 12, 13]
+        self.n_channels_list = [64, 128, 256, 384, 384, 512, 512]
+        self.set_requires_grad(False)
+
+
+class VGG16(BaseNet):
+    """VGG16 for LPIPS."""
+    def __init__(self):
+        super().__init__()
+        self.layers = models.vgg16(pretrained=True).features
+        self.target_layers = [4, 9, 16, 23, 30]
+        self.n_channels_list = [64, 128, 256, 512, 512]
+        self.set_requires_grad(False)
+
+
+class LinLayers(nn.ModuleList):
+    """Linear layers for computing LPIPS."""
+    def __init__(self, n_channels_list: Sequence[int]):
+        super().__init__([
+            nn.Sequential(
+                nn.Identity(),
+                nn.Conv2d(nc, 1, 1, 1, 0, bias=False)
+            ) for nc in n_channels_list
+        ])
+        for param in self.parameters():
+            param.requires_grad = False
+
+
+class LPIPS(nn.Module):
+    """Learned Perceptual Image Patch Similarity (LPIPS) criterion."""
+    def __init__(self, net_type: str = "alex", version: str = "0.1"):
+        super().__init__()
+        assert version == "0.1", "Only version 0.1 is supported."
+        self.net = {"alex": AlexNet, "squeeze": SqueezeNet, "vgg": VGG16}[net_type]()
+        self.lin = LinLayers(self.net.n_channels_list)
+        self.lin.load_state_dict(get_state_dict(net_type, version))
+
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        feat_x, feat_y = self.net(x), self.net(y)
+        diff = [(fx - fy) ** 2 for fx, fy in zip(feat_x, feat_y)]
+        res = [l(d).mean((2, 3), True) for d, l in zip(diff, self.lin)]
+        return torch.sum(torch.cat(res, 0), 0, True)
+
+
+x = torch.rand(1, 3, 256, 256)  # Example input tensor
+y = torch.rand(1, 3, 256, 256)  # Example input tensor
+
+lpips_criterion = LPIPS(net_type="alex")
+loss = lpips_criterion(x, y)
+print(f"LPIPS Loss: {loss.item()}")
