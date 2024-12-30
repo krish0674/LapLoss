@@ -81,7 +81,7 @@ def train(epochs,
                 total_loss.append(loss_iter)
                 psnr_train = psnr_train + psnr_train_iter
                 ssim_train = ssim_train + ssim_train_iter
-                lpips_train = lpips_train = lpips_train_iter
+                lpips_train = lpips_train + lpips_train_iter
                 
     
         psnr_train /= (iteration+1)

@@ -3,8 +3,8 @@ import torch
 from torch.nn.parallel import DataParallel, DistributedDataParallel
 from torchmetrics import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
-# import lpips
-from .losses.metrics import MultiScaleSSIM,LPIPS
+import lpips
+from .losses.metrics import MultiScaleSSIM #,LPIPS
 #from torchmetrics.image import MultiscaleStructuralSimilarityIndexMeasure
 
 import numpy as np
@@ -24,8 +24,8 @@ class BaseModel():
         self.P = PeakSignalNoiseRatio().to(self.device)
         self.Z = StructuralSimilarityIndexMeasure().to(self.device)
         # Initialize LPIPS without extra arguments
-        self.L = LPIPS(net_type='vgg').to(self.device)  # Specify net if needed (default is 'alex')
-        # self.L = lpips.LPIPS(net='vgg').to(self.device)  # Specify net if needed (default is 'alex')
+        # self.L = LPIPS(net_type='vgg').to(self.device)  # Specify net if needed (default is 'alex')
+        self.L = lpips.LPIPS(net='vgg').to(self.device)  # Specify net if needed (default is 'alex')
         #self.L = LearnedPerceptualImagePatchSimilarity(net_type='vgg', reduction='mean', normalize=True).to(self.device)
         #self.MSSIM = MultiscaleStructuralSimilarityIndexMeasure().to(self.device)
         
@@ -189,7 +189,7 @@ class BaseModel():
             img2_lpips = 2 * img2 - 1
 
             # LPIPS
-            LPIP_iter = self.L(img1_lpips, img2_lpips)/img1_lpips.shape[0]
+            LPIP_iter = self.L(img1_lpips, img2_lpips).mean().item()
 
             return psnr, ssim, LPIP_iter
     
@@ -223,7 +223,7 @@ class BaseModel():
             img2_lpips = 2 * img2 - 1
 
             # LPIPS
-            LPIP_iter = self.L(img1_lpips, img2_lpips)/img1_lpips.shape[0]
+            LPIP_iter = self.L(img1_lpips, img2_lpips).mean().item()
 
             img1_rescaled = (img1 * 255).astype(np.uint8)
             img2_rescaled = (img2 * 255).astype(np.uint8)
