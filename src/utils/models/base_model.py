@@ -223,7 +223,7 @@ class BaseModel():
             img2_lpips = 2 * img2 - 1
 
             # LPIPS
-            LPIP_iter = self.L(img1_lpips, img2_lpips).mean().item() 
+            LPIP_iter = self.L(img1_lpips, img2_lpips)/img1_lpips.shape[0]
 
             img1_rescaled = (img1 * 255).astype(np.uint8)
             img2_rescaled = (img2 * 255).astype(np.uint8)
