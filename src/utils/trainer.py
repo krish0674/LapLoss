@@ -62,7 +62,7 @@ def train(epochs,
     for i in range(0, epochs):
         total_loss = []
         kernel_loss =[]
-        psnr_train,ssim_train = 0,0
+        psnr_train,ssim_train,lpips_train= 0,0,0
 
         with tqdm(
             train_loader,
