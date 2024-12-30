@@ -109,26 +109,26 @@ class SICETrainDataset(BaseDataset):
             augmented = self.augmentation(image1=label_image, image=input_image)
             label_image, input_image = augmented['image1'], augmented['image']
 
-        if random.random() < 0.5:
-            input_image = cv2.flip(input_image, 1)  # Horizontal flip
-            label_image = cv2.flip(label_image, 1)
+        # if random.random() < 0.5:
+        #     input_image = cv2.flip(input_image, 1)  # Horizontal flip
+        #     label_image = cv2.flip(label_image, 1)
         
-        if random.random() < 0.5:
-            angle = random.uniform(-15, 15)  # Random rotation
-            h, w = input_image.shape[:2]
-            center = (w // 2, h // 2)
-            rot_mat = cv2.getRotationMatrix2D(center, angle, 1.0)
-            input_image = cv2.warpAffine(input_image, rot_mat, (w, h))
-            label_image = cv2.warpAffine(label_image, rot_mat, (w, h))
+        # if random.random() < 0.5:
+        #     angle = random.uniform(-15, 15)  # Random rotation
+        #     h, w = input_image.shape[:2]
+        #     center = (w // 2, h // 2)
+        #     rot_mat = cv2.getRotationMatrix2D(center, angle, 1.0)
+        #     input_image = cv2.warpAffine(input_image, rot_mat, (w, h))
+        #     label_image = cv2.warpAffine(label_image, rot_mat, (w, h))
         
-        if random.random() < 0.5:
-            scale_factor = random.uniform(0.8, 1.2)  # Random scaling
-            h, w = input_image.shape[:2]
-            input_image = cv2.resize(input_image, (int(w * scale_factor), int(h * scale_factor)))
-            label_image = cv2.resize(label_image, (int(w * scale_factor), int(h * scale_factor)))
+        # if random.random() < 0.5:
+        #     scale_factor = random.uniform(0.8, 1.2)  # Random scaling
+        #     h, w = input_image.shape[:2]
+        #     input_image = cv2.resize(input_image, (int(w * scale_factor), int(h * scale_factor)))
+        #     label_image = cv2.resize(label_image, (int(w * scale_factor), int(h * scale_factor)))
         
-        if random.random() < 0.3:
-            input_image = cv2.GaussianBlur(input_image, (5, 5), 0)
+        # if random.random() < 0.3:
+        #     input_image = cv2.GaussianBlur(input_image, (5, 5), 0)
 
         # NORMALIZATION
         input_image = input_image / 255.0
@@ -221,26 +221,26 @@ class SICETestDataset(Dataset):
             augmented = self.augumentation(image1=label_image, image=input_image)
             label_image, input_image = augmented['image1'], augmented['image']
 
-        if random.random() < 0.5:
-            input_image = cv2.flip(input_image, 1)  # Horizontal flip
-            label_image = cv2.flip(label_image, 1)
+        # if random.random() < 0.5:
+        #     input_image = cv2.flip(input_image, 1)  # Horizontal flip
+        #     label_image = cv2.flip(label_image, 1)
         
-        if random.random() < 0.5:
-            angle = random.uniform(-15, 15)  # Random rotation
-            h, w = input_image.shape[:2]
-            center = (w // 2, h // 2)
-            rot_mat = cv2.getRotationMatrix2D(center, angle, 1.0)
-            input_image = cv2.warpAffine(input_image, rot_mat, (w, h))
-            label_image = cv2.warpAffine(label_image, rot_mat, (w, h))
+        # if random.random() < 0.5:
+        #     angle = random.uniform(-15, 15)  # Random rotation
+        #     h, w = input_image.shape[:2]
+        #     center = (w // 2, h // 2)
+        #     rot_mat = cv2.getRotationMatrix2D(center, angle, 1.0)
+        #     input_image = cv2.warpAffine(input_image, rot_mat, (w, h))
+        #     label_image = cv2.warpAffine(label_image, rot_mat, (w, h))
         
-        if random.random() < 0.5:
-            scale_factor = random.uniform(0.8, 1.2)  # Random scaling
-            h, w = input_image.shape[:2]
-            input_image = cv2.resize(input_image, (int(w * scale_factor), int(h * scale_factor)))
-            label_image = cv2.resize(label_image, (int(w * scale_factor), int(h * scale_factor)))
+        # if random.random() < 0.5:
+        #     scale_factor = random.uniform(0.8, 1.2)  # Random scaling
+        #     h, w = input_image.shape[:2]
+        #     input_image = cv2.resize(input_image, (int(w * scale_factor), int(h * scale_factor)))
+        #     label_image = cv2.resize(label_image, (int(w * scale_factor), int(h * scale_factor)))
         
-        if random.random() < 0.3:
-            input_image = cv2.GaussianBlur(input_image, (5, 5), 0) #Gaussian Blur
+        # if random.random() < 0.3:
+        #     input_image = cv2.GaussianBlur(input_image, (5, 5), 0) #Gaussian Blur
 
         input_image = input_image / 255.0
         label_image = label_image / 255.0
