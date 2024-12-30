@@ -3,7 +3,7 @@ import torch
 from torch.nn.parallel import DataParallel, DistributedDataParallel
 from torchmetrics import PeakSignalNoiseRatio, StructuralSimilarityIndexMeasure
 from torchmetrics.image.lpip import LearnedPerceptualImagePatchSimilarity
-import lpips
+# import lpips
 from .losses.metrics import MultiScaleSSIM,LPIPS
 #from torchmetrics.image import MultiscaleStructuralSimilarityIndexMeasure
 
