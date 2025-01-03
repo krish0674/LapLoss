@@ -31,13 +31,7 @@ def train(epochs,
     # transform = get_transform(dataset='grad')
     
     if dset == 'sice':
-        full_dataset = SICETrainDataset(
-            root_dir=root_dir, 
-            augmentation=get_training_augmentation(),
-            exposure_type=exposure
-        )
-        print(f"Total dataset size: {len(full_dataset)}")
-        
+
         train_dataset = SICETrainDataset(root_dir,augmentation=get_training_augmentation(), split_type="train", split_ratio=0.8)
         val_dataset = SICETrainDataset(root_dir,augmentation=get_training_augmentation(), split_type="val", split_ratio=0.8)
 
