@@ -37,45 +37,69 @@ def get_testing_augmentation():
 
   
 
-class SICETrainDataset(BaseDataset):
-    def __init__(self, root_dir, transform=None, augmentation=None, exposure_type="both"):
+import os
+import cv2
+import random
+import torch
+from torch.utils.data import Dataset
+
+class SICETrainDataset(Dataset):
+    def __init__(self, root_dir, transform=None, augmentation=None, exposure_type="both", split_type="train", split_ratio=0.8, seed=42):
         self.root_dir = root_dir
         self.transform = transform
         self.augmentation = augmentation
         self.exposure_type = exposure_type
+        self.split_type = split_type
         self.data = []
+
+        random.seed(seed)
 
         part_path = os.path.join(root_dir, "Dataset_Part2/Dataset_Part2")
         label_path = os.path.join(part_path, "Label")
 
-        for folder in os.listdir(part_path):
+        folders = [
+            folder for folder in os.listdir(part_path) 
+            if folder.isdigit() and os.path.isdir(os.path.join(part_path, folder))
+        ]
+
+        # Set seed for reproducibility and shuffle
+        random.seed(seed)
+        random.shuffle(folders)
+
+        # Split folders into train and validation sets
+        split_index = int(len(folders) * split_ratio)
+        train_folders = folders[:split_index]
+        val_folders = folders[split_index:]
+
+        selected_folders = train_folders if split_type == "train" else val_folders
+
+        for folder in selected_folders:
             folder_path = os.path.join(part_path, folder)
 
-            if folder.isdigit() and os.path.isdir(folder_path):
-                # Check for either .png or .jpg label file
-                label_file = None
-                for ext in [".PNG", ".JPG", ".JPEG"]:
-                    potential_label = os.path.join(label_path, f"{folder}{ext}")
-                    if os.path.exists(potential_label):
-                        label_file = potential_label
-                        break
+            # Check for either .png or .jpg label file
+            label_file = None
+            for ext in [".PNG", ".JPG", ".JPEG"]:
+                potential_label = os.path.join(label_path, f"{folder}{ext}")
+                if os.path.exists(potential_label):
+                    label_file = potential_label
+                    break
 
-                if not label_file:
-                    continue  # Skip if no valid label file found
+            if not label_file:
+                continue  # Skip if no valid label file found
 
-                # Add valid image-label pairs
-                image_files = [
-                    os.path.join(folder_path, img_file)
-                    for img_file in sorted(os.listdir(folder_path))
-                    if img_file.endswith((".PNG", ".JPG", ".JPEG"))
-                ]
-                self.data.append((image_files, label_file))
+            # Add valid image-label pairs
+            image_files = [
+                os.path.join(folder_path, img_file)
+                for img_file in sorted(os.listdir(folder_path))
+                if img_file.endswith((".PNG", ".JPG", ".JPEG"))
+            ]
+            self.data.append((image_files, label_file))
 
         # Filter images based on exposure type
         filtered_data = []
         for image_files, label_file in self.data:
             num_images = len(image_files)
-            half_index = num_images // 2 +1
+            half_index = num_images // 2 + 1
 
             if self.exposure_type == "under":
                 filtered_data.extend([(img, label_file) for img in image_files[:half_index]])
@@ -108,27 +132,6 @@ class SICETrainDataset(BaseDataset):
         if self.augmentation:
             augmented = self.augmentation(image1=label_image, image=input_image)
             label_image, input_image = augmented['image1'], augmented['image']
-
-        # if random.random() < 0.5:
-        #     input_image = cv2.flip(input_image, 1)  # Horizontal flip
-        #     label_image = cv2.flip(label_image, 1)
-        
-        # if random.random() < 0.5:
-        #     angle = random.uniform(-15, 15)  # Random rotation
-        #     h, w = input_image.shape[:2]
-        #     center = (w // 2, h // 2)
-        #     rot_mat = cv2.getRotationMatrix2D(center, angle, 1.0)
-        #     input_image = cv2.warpAffine(input_image, rot_mat, (w, h))
-        #     label_image = cv2.warpAffine(label_image, rot_mat, (w, h))
-        
-        # if random.random() < 0.5:
-        #     scale_factor = random.uniform(0.8, 1.2)  # Random scaling
-        #     h, w = input_image.shape[:2]
-        #     input_image = cv2.resize(input_image, (int(w * scale_factor), int(h * scale_factor)))
-        #     label_image = cv2.resize(label_image, (int(w * scale_factor), int(h * scale_factor)))
-        
-        # if random.random() < 0.3:
-        #     input_image = cv2.GaussianBlur(input_image, (5, 5), 0)
 
         # NORMALIZATION
         input_image = input_image / 255.0

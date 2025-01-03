@@ -38,11 +38,8 @@ def train(epochs,
         )
         print(f"Total dataset size: {len(full_dataset)}")
         
-        indices = list(range(len(full_dataset)))
-        train_indices, val_indices = train_test_split(indices, test_size=0.1, random_state=42)
-        
-        train_dataset = Subset(full_dataset, train_indices)
-        val_dataset = Subset(full_dataset, val_indices)
+        train_dataset = SICETrainDataset(root_dir,augmentation=get_training_augmentation(), split_type="train", split_ratio=0.8)
+        val_dataset = SICETrainDataset(root_dir,augmentation=get_training_augmentation(), split_type="val", split_ratio=0.8)
 
         print(f"Training dataset size: {len(train_dataset)}")
         print(f"Validation dataset size: {len(val_dataset)}")
