@@ -28,13 +28,13 @@ import cv2
 def get_training_augmentation():
     train_transform = [
         albu.Resize(608, 896, interpolation=cv2.INTER_LINEAR, always_apply=True),
-        albu.VerticalFlip(p=0.3),
-        albu.HorizontalFlip(p=0.3),
-        albu.ShiftScaleRotate(shift_limit=0.02, scale_limit=0.05, rotate_limit=5, p=0.3),
-        albu.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=0.3),
-        albu.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=15, val_shift_limit=10, p=0.3),
-        albu.GaussNoise(var_limit=(5.0, 20.0), p=0.3),
-        albu.GaussianBlur(blur_limit=(3, 5), p=0.3),
+        albu.VerticalFlip(p=0.5),
+        albu.HorizontalFlip(p=0.5),
+        #albu.ShiftScaleRotate(shift_limit=0.02, scale_limit=0.05, rotate_limit=5, p=0.5),
+        albu.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=0.5),
+        # albu.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=15, val_shift_limit=10, p=0.3),
+        # albu.GaussNoise(var_limit=(5.0, 20.0), p=0.3),
+        # albu.GaussianBlur(blur_limit=(3, 5), p=0.3),
         # albu.GridDistortion(num_steps=3, distort_limit=0.01, p=0.3),
     ]
     return albu.Compose(train_transform, additional_targets={'image1': 'image'}, is_check_shapes=False)
