@@ -66,31 +66,31 @@ def train(epochs,
                 # print(f'Iteration {iteration}, input min: {x.min()}, max: {x.max()}, mean: {x.mean()}')
                 # print(f'Iteration {iteration}, target min: {y.min()}, max: {y.max()}, mean: {y.mean()}')
 
-                loss_iter,psnr_train_iter,ssim_train_iter, lpips_train_iter = lptn_model.optimize_parameters(iteration)
+                loss_iter,psnr_train_iter,ssim_train_iter= lptn_model.optimize_parameters(iteration)
                #print(f'Iteration {iteration}, loss: {loss_iter}, PSNR: {psnr_train_iter}, SSIM: {ssim_train_iter}')
 
                 total_loss.append(loss_iter)
                 psnr_train = psnr_train + psnr_train_iter
                 ssim_train = ssim_train + ssim_train_iter
-                lpips_train = lpips_train + lpips_train_iter
+                # lpips_train = lpips_train + lpips_train_iter
                 
     
         psnr_train /= (iteration+1)
         ssim_train /= (iteration+1)
-        lpips_train /= (iteration+1)
+        # lpips_train /= (iteration+1)
         avg_loss = sum(total_loss)/len(total_loss)
         
         print(f'TRAIN PSNR {psnr_train}')
         print(f'TRAIN SSIM {ssim_train}')
-        print(f'TRAIN LPIPS {lpips_train}')
+        # print(f'TRAIN LPIPS {lpips_train}')
     
-        psnr_val, ssim_val, lpips_val = lptn_model.nondist_validation(valid_loader)
+        psnr_val, ssim_val = lptn_model.nondist_validation(valid_loader)
 
         logger['train_loss'] = avg_loss
         logger['train_psnr'] = psnr_train
         logger['train_ssim'] = ssim_train
         logger['val_psnr'] = psnr_val
-        logger['val_lpips'] = lpips_val
+        # logger['val_lpips'] = lpips_val
         logger['val_ssim'] = ssim_val
         logger['epoch'] = i
         if max_ssim <= logger['val_ssim']:
@@ -113,16 +113,16 @@ def train(epochs,
 
     val_loader = DataLoader(val_dataset, batch_size=1, shuffle=True)
     
-    with tqdm(
-        val_loader
-    ) as loader:
-        for iteration,batch_data in enumerate(loader):
-            x,y = batch_data
-            lptn_model.net_g.eval()
-            lptn_model.feed_data(x,y)
-            lptn_model.visualise()
-            print('visualized')
-            break
+    # with tqdm(
+    #     val_loader
+    # ) as loader:
+    #     for iteration,batch_data in enumerate(loader):
+    #         x,y = batch_data
+    #         lptn_model.net_g.eval()
+    #         lptn_model.feed_data(x,y)
+    #         lptn_model.visualise()
+    #         print('visualized')
+    #         break
 
 
 def train_model(configs):

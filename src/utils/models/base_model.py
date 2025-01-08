@@ -181,18 +181,18 @@ class BaseModel():
             # MSSIM (Multi-scale SSIM)
             #mssim = self.MSSIM(img1, img2).item()
 
-            img1 = img1/255
-            img2 = img2/255
+            # img1 = img1/255
+            # img2 = img2/255
 
-            # LPIPS (expects [-1, 1] range)
-            img1_lpips = 2 * img1 - 1
-            img2_lpips = 2 * img2 - 1
+            # # LPIPS (expects [-1, 1] range)
+            # img1_lpips = 2 * img1 - 1
+            # img2_lpips = 2 * img2 - 1
 
             # LPIPS
-            LPIP_iter = self.L(img1_lpips, img2_lpips).mean().item()  # Use mean() to average over batch
+            # LPIP_iter = self.L(img1_lpips, img2_lpips).mean().item()  # Use mean() to average over batch
             #LPIP_iter = self.L(img1_lpips, img2_lpips)/img1_lpips.shape[0]
 
-            return psnr, ssim, LPIP_iter
+            return psnr, ssim
     
     def calculate_metrics_test(self, img1, img2):
             
