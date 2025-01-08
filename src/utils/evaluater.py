@@ -50,24 +50,23 @@ def eval(root_dir, lr,loss_weight = 2000,gan_type = 'standard' ,device='cuda', n
             
             lptn_model.feed_data(x,y)
             
-            loss_iter,psnr_test_iter,ssim_test_iter, lpips_test_iter = lptn_model.optimize_parameters(iteration)
+            psnr_test_iter,ssim_test_iter, lpips_test_iter,mssim_iter_test = lptn_model.optimize_parameters(iteration,mode='test')
             # lptn_model.visualise(iteration=iteration)
             flag = 0
             
             lpips_test += lpips_test_iter
             psnr_test += psnr_test_iter
             ssim_test += ssim_test_iter
-            total_loss.append(loss_iter)
     
     lpips_test /=(iteration+1)
     psnr_test /= (iteration+1)
     ssim_test /= (iteration+1)
     lpips_test /= (iteration+1)
-    avg_loss = sum(total_loss)/len(total_loss)
 
     print(f'TEST LPIPS over {lpips_test}')
     print(f'TEST PSNR over  {psnr_test}')
     print(f'TEST SSIM over {ssim_test}')
+    print(f'TEST MSSIM over {mssim_iter_test}')
 
     testing_indices = [
         *range(4, 24), 28, 31, 33, 34, 
@@ -105,24 +104,23 @@ def eval(root_dir, lr,loss_weight = 2000,gan_type = 'standard' ,device='cuda', n
             
             lptn_model.feed_data(x,y)
             
-            loss_iter,psnr_test_iter,ssim_test_iter, lpips_test_iter = lptn_model.optimize_parameters(iteration)
+            psnr_test_iter,ssim_test_iter, lpips_test_iter,mssim_iter_test = lptn_model.optimize_parameters(iteration,mode='test')
             # lptn_model.visualise(iteration=iteration)
             flag = 0
             
             lpips_test += lpips_test_iter
             psnr_test += psnr_test_iter
             ssim_test += ssim_test_iter
-            total_loss.append(loss_iter)
     
     lpips_test /=(iteration+1)
     psnr_test /= (iteration+1)
     ssim_test /= (iteration+1)
     lpips_test /= (iteration+1)
-    avg_loss = sum(total_loss)/len(total_loss)
 
     print(f'TEST LPIPS under {lpips_test}')
     print(f'TEST PSNR under  {psnr_test}')
     print(f'TEST SSIM under {ssim_test}')
+    print(f'TEST MSSIM under {mssim_iter_test}')
 
     # Initialize the test dataset
     test_dataset = SICEGradTest(
@@ -151,24 +149,23 @@ def eval(root_dir, lr,loss_weight = 2000,gan_type = 'standard' ,device='cuda', n
             
             lptn_model.feed_data(x,y)
             
-            loss_iter,psnr_test_iter,ssim_test_iter, lpips_test_iter = lptn_model.optimize_parameters(iteration)
+            psnr_test_iter,ssim_test_iter, lpips_test_iter,mssim_iter_test = lptn_model.optimize_parameters(iteration,mode='test')
             # lptn_model.visualise(iteration=iteration)
             flag = 0
             
             lpips_test += lpips_test_iter
             psnr_test += psnr_test_iter
             ssim_test += ssim_test_iter
-            total_loss.append(loss_iter)
     
     lpips_test /=(iteration+1)
     psnr_test /= (iteration+1)
     ssim_test /= (iteration+1)
     lpips_test /= (iteration+1)
-    avg_loss = sum(total_loss)/len(total_loss)
 
     print(f'TEST LPIPS grad {lpips_test}')
     print(f'TEST PSNR grad  {psnr_test}')
     print(f'TEST SSIM grad {ssim_test}')
+    print(f'TEST MSSIM grad {mssim_iter_test}')
 
     # Initialize the test dataset
     test_dataset = SICEMixTest(
@@ -197,24 +194,23 @@ def eval(root_dir, lr,loss_weight = 2000,gan_type = 'standard' ,device='cuda', n
             
             lptn_model.feed_data(x,y)
             
-            loss_iter,psnr_test_iter,ssim_test_iter, lpips_test_iter = lptn_model.optimize_parameters(iteration)
+            psnr_test_iter,ssim_test_iter, lpips_test_iter,mssim_iter_test = lptn_model.optimize_parameters(iteration,mode='test')
             # lptn_model.visualise(iteration=iteration)
             flag = 0
             
             lpips_test += lpips_test_iter
             psnr_test += psnr_test_iter
             ssim_test += ssim_test_iter
-            total_loss.append(loss_iter)
     
     lpips_test /=(iteration+1)
     psnr_test /= (iteration+1)
     ssim_test /= (iteration+1)
     lpips_test /= (iteration+1)
-    avg_loss = sum(total_loss)/len(total_loss)
 
     print(f'TEST LPIPS mix {lpips_test}')
     print(f'TEST PSNR mix  {psnr_test}')
     print(f'TEST SSIM mix {ssim_test}')
+    print(f'TEST MSSIM mix {mssim_iter_test}')
 
 def eval_model(configs):
     eval(configs['root_dir'],

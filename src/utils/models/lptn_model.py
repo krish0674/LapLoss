@@ -211,7 +211,7 @@ class LPTNModel(BaseModel):
         return total_loss #, loss_dict
 
 
-    def optimize_parameters(self, current_iter):
+    def optimize_parameters(self, current_iter,mode='train'):
         torch.autograd.set_detect_anomaly(True)
 
         # optimize net_g
@@ -281,10 +281,16 @@ class LPTNModel(BaseModel):
         if 'High_Limage' in visuals:
             HLI_img = visuals['High_Limage']
             #del self.HLI
-      
-        psnr_t,ssim_t = self.calculate_metrics(result_img,HLI_img)
 
-        return l_g_total, psnr_t, ssim_t
+        if mode=='train':
+            psnr_t,ssim_t = self.calculate_metrics(result_img,HLI_img)
+
+            return l_g_total, psnr_t, ssim_t
+        if mode=='test':
+            psnr_t,ssim_t,lpips,mssim = self.calculate_metrics_test(result_img,HLI_img)
+
+            return psnr_t,ssim_t,lpips,mssim
+    
 
     def test(self):
         self.net_g.eval()

@@ -66,7 +66,7 @@ def train(epochs,
                 # print(f'Iteration {iteration}, input min: {x.min()}, max: {x.max()}, mean: {x.mean()}')
                 # print(f'Iteration {iteration}, target min: {y.min()}, max: {y.max()}, mean: {y.mean()}')
 
-                loss_iter,psnr_train_iter,ssim_train_iter= lptn_model.optimize_parameters(iteration)
+                loss_iter,psnr_train_iter,ssim_train_iter= lptn_model.optimize_parameters(iteration,mode='train')
                #print(f'Iteration {iteration}, loss: {loss_iter}, PSNR: {psnr_train_iter}, SSIM: {ssim_train_iter}')
 
                 total_loss.append(loss_iter)
