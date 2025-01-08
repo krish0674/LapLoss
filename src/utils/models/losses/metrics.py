@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import signal
 from scipy.ndimage.filters import convolve
-
+import torch as T
 
 def _FSpecialGauss(size, sigma):
     """Function to mimic the 'fspecial' gaussian MATLAB function."""
@@ -16,15 +16,13 @@ def _FSpecialGauss(size, sigma):
     g = np.exp(-((x**2 + y**2) / (2.0 * sigma**2)))
     return g / g.sum()
 
-import torch as T
-
 def _SSIMForMultiScale(img1, img2, max_val=255, filter_size=11, filter_sigma=1.5, k1=0.01, k2=0.03):
     """Return the Structural Similarity Map between `img1` and `img2`."""
     if img1.shape != img2.shape:
         raise RuntimeError('Input images must have the same shape.')
 
-    img1 = img1.to(T.float64)
-    img2 = img2.to(T.float64)
+    img1 = img1.to(T.float64).cpu().numpy()  # Convert Tensor to CPU and NumPy
+    img2 = img2.to(T.float64).cpu().numpy()  # Convert Tensor to CPU and NumPy
     _, height, width, _ = img1.shape
 
     size = min(filter_size, height, width)
@@ -58,7 +56,6 @@ def _SSIMForMultiScale(img1, img2, max_val=255, filter_size=11, filter_sigma=1.5
     cs = np.mean(v1 / v2)
     return ssim, cs
 
-
 def MultiScaleSSIM(img1, img2, max_val=255, filter_size=11, filter_sigma=1.5, k1=0.01, k2=0.03, weights=None):
     """Return the MS-SSIM score between `img1` and `img2`."""
     if img1.shape != img2.shape:
@@ -67,13 +64,13 @@ def MultiScaleSSIM(img1, img2, max_val=255, filter_size=11, filter_sigma=1.5, k1
     weights = np.array(weights if weights else [0.0448, 0.2856, 0.3001, 0.2363, 0.1333])
     levels = weights.size
     downsample_filter = np.ones((1, 2, 2, 1)) / 4.0
-    im1, im2 = [x.to(T.float64) for x in [img1, img2]]
+    im1, im2 = [x.to(T.float64) for x in [img1, img2]]  # Ensure the tensors are float64
     mssim = np.array([])
     mcs = np.array([])
+    
     for _ in range(levels):
         ssim, cs = _SSIMForMultiScale(
-            im1,
-            im2,
+            im1, im2,
             max_val=max_val,
             filter_size=filter_size,
             filter_sigma=filter_sigma,
@@ -81,11 +78,13 @@ def MultiScaleSSIM(img1, img2, max_val=255, filter_size=11, filter_sigma=1.5, k1
             k2=k2)
         mssim = np.append(mssim, ssim)
         mcs = np.append(mcs, cs)
-        filtered = [
-            convolve(im, downsample_filter, mode='reflect')
-            for im in [im1, im2]
-        ]
-        im1, im2 = [x[:, ::2, ::2, :] for x in filtered]
+
+        # Convert the tensors to numpy before using scipy's convolve
+        filtered = [convolve(im.cpu().numpy(), downsample_filter, mode='reflect') for im in [im1, im2]]
+
+        # Convert back to tensor and downsample
+        im1, im2 = [T.from_numpy(x).to(T.float64)[:, ::2, ::2, :] for x in filtered]
+
     return (np.prod(mcs[0:levels - 1]**weights[0:levels - 1]) *
             (mssim[levels - 1]**weights[levels - 1]))
 
