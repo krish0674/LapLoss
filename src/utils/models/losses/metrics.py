@@ -16,14 +16,15 @@ def _FSpecialGauss(size, sigma):
     g = np.exp(-((x**2 + y**2) / (2.0 * sigma**2)))
     return g / g.sum()
 
+import torch as T
 
 def _SSIMForMultiScale(img1, img2, max_val=255, filter_size=11, filter_sigma=1.5, k1=0.01, k2=0.03):
     """Return the Structural Similarity Map between `img1` and `img2`."""
     if img1.shape != img2.shape:
         raise RuntimeError('Input images must have the same shape.')
 
-    img1 = img1.astype(np.float64)
-    img2 = img2.astype(np.float64)
+    img1 = img1.to(T.float64)
+    img2 = img2.to(T.float64)
     _, height, width, _ = img1.shape
 
     size = min(filter_size, height, width)
@@ -66,7 +67,7 @@ def MultiScaleSSIM(img1, img2, max_val=255, filter_size=11, filter_sigma=1.5, k1
     weights = np.array(weights if weights else [0.0448, 0.2856, 0.3001, 0.2363, 0.1333])
     levels = weights.size
     downsample_filter = np.ones((1, 2, 2, 1)) / 4.0
-    im1, im2 = [x.astype(np.float64) for x in [img1, img2]]
+    im1, im2 = [x.to(T.float64) for x in [img1, img2]]
     mssim = np.array([])
     mcs = np.array([])
     for _ in range(levels):
