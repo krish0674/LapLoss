@@ -31,6 +31,7 @@ def get_training_augmentation():
         albu.VerticalFlip(p=0.5),
         albu.HorizontalFlip(p=0.5),
         albu.ShiftScaleRotate(shift_limit=0.02, scale_limit=0.05, rotate_limit=5, p=0.5),
+        # albu.RandomCrop(width=896, height=608),
         #albu.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=0.5),
         # albu.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=15, val_shift_limit=10, p=0.3),
         # albu.GaussNoise(var_limit=(5.0, 20.0), p=0.3),
