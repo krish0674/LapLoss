@@ -203,10 +203,11 @@ class LPTNModel(BaseModel):
             l_gan = self.GLoss(fake_g_pred, True, is_disc=False)
 
             # Weighted loss
-            print(f"At level {level}, mse loss si {l_pix}")
-            print(f"At level {level},gan loss is {l_gan}")
+
             level_loss = weight * (l_pix + l_gan)
-            print(f"At level {level},loss si {level_loss}")
+            # print(f"At level {level}, mse loss si {l_pix}")
+            # print(f"At level {level},gan loss is {l_gan}")
+            # print(f"At level {level},loss si {level_loss}")
             total_loss += level_loss
 
             # Store individual level loss
