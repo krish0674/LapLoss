@@ -205,14 +205,14 @@ class LPTNModel(BaseModel):
             # Weighted loss
 
             level_loss = weight * (l_pix + l_gan)
-            # print(f"At level {level}, mse loss si {l_pix}")
-            # print(f"At level {level},gan loss is {l_gan}")
-            # print(f"At level {level},loss si {level_loss}")
+            print(f"At level {level}, mse loss si {l_pix}")
+            print(f"At level {level},gan loss is {l_gan}")
+            print(f"At level {level},loss si {level_loss}")
             total_loss += level_loss
 
             # Store individual level loss
             # loss_dict[f'level_{level}'] = level_loss.item()
-        print(f"Total loss is {total_loss}")
+        # print(f"Total loss is {total_loss}")
         return total_loss #, loss_dict
 
 
