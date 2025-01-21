@@ -14,6 +14,7 @@ from .archs.LPTN_paper_arch import LPTNPaper
 from .archs.lptn import LPTN
 
 from .archs.LPTN_paper_arch import Lap_Pyramid_Conv
+from optimizer import SOAP
 from .archs.discriminator_arch import Discriminator1,Discriminator2,Discriminator3
 from .losses.losses import MSELoss, GANLoss
 
@@ -114,8 +115,10 @@ class LPTNModel(BaseModel):
             if v.requires_grad:
                 optim_params.append(v)
     
-        self.optimizer_g = torch.optim.Adam(optim_params,
-                                                 lr=0.0001, weight_decay=0, betas=[0.9, 0.99])                     
+        # self.optimizer_g = torch.optim.Adam(optim_params,
+        #                                          lr=0.0001, weight_decay=0, betas=[0.9, 0.99])     
+        self.optimizer_g = SOAP(lr = 1e-3, betas=(.95, .95), weight_decay=.01, precondition_frequency=10)
+                
         self.optimizers.append(self.optimizer_g)
 
         # optimizer d
