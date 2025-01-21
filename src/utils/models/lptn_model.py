@@ -261,8 +261,8 @@ class LPTNModel(BaseModel):
 
         # Loop through each discriminator
         for i, (discriminator, optimizer, pyr_gt, pyr_pred) in enumerate(zip(discriminators, optimizers, pyr_gt_levels, pyr_pred_levels)):
-            # pyr_gt = pyr_gt.detach()
-            # pyr_pred = pyr_pred.detach()
+            pyr_gt = pyr_gt.detach()
+            pyr_pred = pyr_pred.detach()
             # pyr_gt = (pyr_gt - pyr_gt.mean()) / (pyr_gt.std() + 1e-8)
             # pyr_pred = (pyr_pred - pyr_pred.mean()) / (pyr_pred.std() + 1e-8)  
             # Real
