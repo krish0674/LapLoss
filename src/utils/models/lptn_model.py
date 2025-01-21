@@ -14,7 +14,7 @@ from .archs.LPTN_paper_arch import LPTNPaper
 from .archs.lptn import LPTN
 
 from .archs.LPTN_paper_arch import Lap_Pyramid_Conv
-from optimizer import SOAP
+from .optimizer import SOAP
 from .archs.discriminator_arch import Discriminator1,Discriminator2,Discriminator3
 from .losses.losses import MSELoss, GANLoss
 
