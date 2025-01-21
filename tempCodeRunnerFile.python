@@ -1,0 +1,22 @@
+import matplotlib.pyplot as plt
+from scipy.io import loadmat
+
+# Load the .mat file
+file_path = r'C:\Users\KRISH DIDWANIA\Downloads\Salinas.mat'
+data = loadmat(file_path)
+
+# Access the 3D image data
+salinas_data = data['salinas']  # Shape: (512, 217, 224)
+
+# Visualize one image from the set
+image_index = 0  # Change this to view other images (range: 0 to 216)
+image = salinas_data[:, image_index, :]  # Extract a single image
+
+# Display the image
+plt.figure(figsize=(8, 6))
+plt.imshow(image, cmap='gray')  # Use 'gray' or another colormap
+plt.colorbar(label='Pixel Intensity')
+plt.title(f'Image {image_index} Visualization')
+plt.xlabel('Width')
+plt.ylabel('Height')
+plt.show()
