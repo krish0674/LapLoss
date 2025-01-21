@@ -278,6 +278,7 @@ class LPTNModel(BaseModel):
             l_d = l_d_real + l_d_fake + self.gp_weight * gradient_penalty
 
             # Backpropagation and optimization
+            optimizer.zero_grad()
             l_d.backward()
             optimizer.step()
 
