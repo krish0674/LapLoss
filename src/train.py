@@ -55,7 +55,7 @@ if __name__ == '__main__':
     parser.add_argument('--nrb_high', type=int, required=False, default=3)
     parser.add_argument('--nrb_top', type=int, required=False, default=3)
     parser.add_argument('--exposure', type=str, required=False, default='over')
-    parser.add_argument('--levels', type=int, nargs='+', required=False, default=[1, 2, 3],
+    parser.add_argument('--levels', type=int, nargs='+', required=False, default=[0,1,2],
                         help='List of levels as integers (e.g., 1 2 3)')
     parser.add_argument('--weights', type=float, nargs='+', required=False, default=[0.5, 0.3, 0.2],
                         help='List of weights as floats (e.g., 0.5 0.3 0.2)')
