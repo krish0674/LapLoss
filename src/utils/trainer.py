@@ -25,14 +25,14 @@ def train(epochs,
           gan_type = 'standard',
           exposure='over',
           levels=[0,1,2],
-          weights=[4/7,2/7,1/7]
+          weights=[4/7,2/7,1/7],
           ):
     
     # transform = get_transform(dataset='grad')
     
     if dset == 'sice':
 
-        train_dataset = SICETrainDataset(root_dir,augmentation=get_training_augmentation(), split_type="train", split_ratio=0.8)
+        train_dataset = SICETrainDataset(root_dir,augmentation=get_training_augmentation(), split_type="train", split_ratio=0.8,exposure_type=exposure)
         val_dataset = SICETrainDataset(root_dir,augmentation=get_training_augmentation(), split_type="val", split_ratio=0.8)
 
         print(f"Training dataset size: {len(train_dataset)}")
