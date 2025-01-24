@@ -121,9 +121,9 @@ def eval(root_dir, lr,loss_weight = 2000,gan_type = 'standard' ,device='cuda', n
     # print(f'TEST MSSIM under {mssim_test}')
 
     # # Initialize the test dataset
-    # test_dataset = SICEMixTest(
-    #     root_dir=r'/kaggle/input/sice-grad-and-sice-mix/SICEGM',
-    # )
+    test_dataset = SICEMixTest(
+        root_dir=r'/kaggle/input/sice-grad-and-sice-mix/SICEGM',
+    )
 
     # Create the DataLoader
     test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
