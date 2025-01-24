@@ -390,11 +390,11 @@ class LPTNModel(BaseModel):
         img_in = input[0]
         #img_in = (img_in*std)+mean
         img_in = (img_in * 255.).astype(np.uint8)
-        label=(label*255).astype(np.uint8)
-        #print(img.shape)
-        #print(img_in.shape)
-        print("imaged")
-        cv2.imwrite(os.path.join(save_dir, f'label_{unique_index}.png'), img)
+        # label=(label*255).astype(np.uint8)
+        # #print(img.shape)
+        # #print(img_in.shape)
+        # print("imaged")
+        # cv2.imwrite(os.path.join(save_dir, f'label_{unique_index}.png'), img)
 
         cv2.imwrite(os.path.join(save_dir, f'output_image_{unique_index}.png'), img)
         cv2.imwrite(os.path.join(save_dir, f'input_image_{unique_index}.png'), img_in)
