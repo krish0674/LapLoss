@@ -121,17 +121,17 @@ def eval(root_dir, lr,loss_weight = 2000,gan_type = 'standard' ,device='cuda', n
     # print(f'TEST MSSIM under {mssim_test}')
 
     # # # Initialize the test dataset
-    # test_dataset = SICEMixTest(
-    #     root_dir=r'/kaggle/input/sice-grad-and-sice-mix/SICEGM',
-    # )
+    test_dataset = SICEMixTest(
+        root_dir=r'/kaggle/input/sice-grad-and-sice-mix/SICEGM',
+    )
 
-    # # Create the DataLoader
-    # test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+    # Create the DataLoader
+    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
-    # lptn_model = LPTNModel(loss_weight, device, lr, gan_type=gan_type, nrb_high=nrb_high, nrb_low=nrb_low, nrb_top=nrb_top,levels=[0,1,2],weights=[0.5,0.3,0.2])
-    # # summary(lptn_model.net_g , input_size=(3, 608, 896))
-    # total_loss = []
-    # psnr_test,ssim_test, lpips_test,mssim_test = 0,0,0,0
+    lptn_model = LPTNModel(loss_weight, device, lr, gan_type=gan_type, nrb_high=nrb_high, nrb_low=nrb_low, nrb_top=nrb_top,levels=[0,1,2],weights=[0.5,0.3,0.2])
+    # summary(lptn_model.net_g , input_size=(3, 608, 896))
+    total_loss = []
+    psnr_test,ssim_test, lpips_test,mssim_test = 0,0,0,0
 
  
     with tqdm(
