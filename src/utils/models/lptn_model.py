@@ -385,17 +385,16 @@ class LPTNModel(BaseModel):
         img = output[0]
         img = (img * 255.).astype(np.uint8)  # Scale to [0, 255]
 
-        mean = [0.41441402, 0.41269127, 0.37940571]
-        std = [0.33492465, 0.33443474, 0.33518072]
-
         input = input.detach().cpu().numpy()
         input = np.transpose(input, (0, 2, 3, 1))  # CHW to HWC
         img_in = input[0]
         #img_in = (img_in*std)+mean
         img_in = (img_in * 255.).astype(np.uint8)
-
+        label=(label*255).astype(np.uint8)
         #print(img.shape)
         #print(img_in.shape)
         print("imaged")
+        cv2.imwrite(os.path.join(save_dir, f'label_{unique_index}.png'), img)
+
         cv2.imwrite(os.path.join(save_dir, f'output_image_{unique_index}.png'), img)
         cv2.imwrite(os.path.join(save_dir, f'input_image_{unique_index}.png'), img_in)
