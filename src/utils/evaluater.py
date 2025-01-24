@@ -103,7 +103,7 @@ def eval(root_dir, lr,loss_weight = 2000,gan_type = 'standard' ,device='cuda', n
             lptn_model.feed_data(x,y)
             
             psnr_test_iter,ssim_test_iter, lpips_test_iter,mssim_iter_test = lptn_model.optimize_parameters(iteration,mode='test')
-            # lptn_model.visualise(iteration=iteration)
+            lptn_model.visualise(iteration=iteration)
             flag = 0
             
             lpips_test += lpips_test_iter
