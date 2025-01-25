@@ -168,7 +168,7 @@ def eval(root_dir, lr,loss_weight = 2000,gan_type = 'standard' ,device='cuda', n
         root_dir=r'/kaggle/input/sice-grad-and-sice-mix/SICEGM',
     )
 
-    Create the DataLoader
+    #Create the DataLoader
     test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
     lptn_model = LPTNModel(loss_weight, device, lr, gan_type=gan_type, nrb_high=nrb_high, nrb_low=nrb_low, nrb_top=nrb_top,levels=[0,1,2],weights=[0.5,0.3,0.2])
