@@ -100,7 +100,7 @@ class Trans_low(nn.Module):
         return out
 
 class Trans_high(nn.Module):
-    def __init__(self, num_residual_blocks, num_high=3):
+    def __init__(self, num_residual_blocks, num_high=2):
         super(Trans_high, self).__init__()
 
         self.num_high = num_high
@@ -143,7 +143,7 @@ class Trans_high(nn.Module):
         return pyr_result
 
 class LPTN(nn.Module):
-    def __init__(self, nrb_low=5, nrb_high=3, num_high=3, device = torch.device('cuda')):
+    def __init__(self, nrb_low=3, nrb_high=3, num_high=2, device = torch.device('cuda')):
         super(LPTN, self).__init__()
 
         self.device = device
