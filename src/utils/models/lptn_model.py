@@ -62,11 +62,11 @@ class LPTNModel(BaseModel):
         self.net_g = model.to(self.device)
         self.print_network(self.net_g)
 
-        self.net_d1 = disc1.to(self.device)
+        self.net_d = disc1.to(self.device)
         self.net_d2 = disc2.to(self.device)
         self.net_d3 = disc3.to(self.device)
 
-        self.print_network(self.net_d1)
+        self.print_network(self.net_1)
         self.print_network(self.net_d2)
         self.print_network(self.net_d3)
 
@@ -96,7 +96,7 @@ class LPTNModel(BaseModel):
 
     def init_training_settings(self):
         self.net_g.train()
-        self.net_d1.train()
+        self.net_d.train()
         self.net_d2.train()
         self.net_d3.train()
         self.optimizers = []
@@ -122,20 +122,20 @@ class LPTNModel(BaseModel):
         self.optimizers.append(self.optimizer_g)
 
         # optimizer d
-        self.optimizer_d1 = torch.optim.Adam(self.net_d1.parameters(),
+        self.optimizer_d = torch.optim.Adam(self.net_d.parameters(),
                                                  lr=0.0001, weight_decay=0, betas=[0.9, 0.99])                     
 
-        self.optimizers.append(self.optimizer_d1)
+        # self.optimizers.append(self.optimizer_d1)
 
-        self.optimizer_d2 = torch.optim.Adam(self.net_d2.parameters(),
-                                                 lr=0.0001, weight_decay=0, betas=[0.9, 0.99])                     
+        # self.optimizer_d2 = torch.optim.Adam(self.net_d2.parameters(),
+        #                                          lr=0.0001, weight_decay=0, betas=[0.9, 0.99])                     
 
-        self.optimizers.append(self.optimizer_d2)
+        # self.optimizers.append(self.optimizer_d2)
 
-        self.optimizer_d3 = torch.optim.Adam(self.net_d3.parameters(),
-                                                 lr=0.0001, weight_decay=0, betas=[0.9, 0.99])                     
+        # self.optimizer_d3 = torch.optim.Adam(self.net_d3.parameters(),
+        #                                          lr=0.0001, weight_decay=0, betas=[0.9, 0.99])                     
 
-        self.optimizers.append(self.optimizer_d3)
+        # self.optimizers.append(self.optimizer_d3)
 
     # def pyramid_decom(self, img):
     #     current = img
@@ -188,47 +188,41 @@ class LPTNModel(BaseModel):
         loss_dict = {}
 
         # Iterate only through the specified levels
-        for level, weight in zip(levels, weights):
-            if level >= len(pyr_gt) or level >= len(pyr_pred) or level >= len(discriminators):
-                raise ValueError(f"Specified level {level} exceeds available pyramid levels.")
+        # for level, weight in zip(levels, weights):
+        #     if level >= len(pyr_gt) or level >= len(pyr_pred) or level >= len(discriminators):
+        #         raise ValueError(f"Specified level {level} exceeds available pyramid levels.")
             
-            # Get the ground truth, predicted, and discriminator for the current level
-            gt = pyr_gt[level]
-            pred = pyr_pred[level]
-            discriminator = discriminators[level]
-            # pred = (pred - pred.mean()) / (pred.std() + 1e-8)
-            # gt = (gt - gt.mean()) / (gt.std() + 1e-8)            # print(f"at level {level} shape is {gt.shape}")
-            # Pixel loss at this level
-            l_pix = self.MLoss(pred, gt).to(self.device)
+        #     # Get the ground truth, predicted, and discriminator for the current level
+        #     gt = pyr_gt[level]
+        #     pred = pyr_pred[level]
+        #     discriminator = discriminators[level]
+        #     # pred = (pred - pred.mean()) / (pred.std() + 1e-8)
+        #     # gt = (gt - gt.mean()) / (gt.std() + 1e-8)            # print(f"at level {level} shape is {gt.shape}")
+        #     # Pixel loss at this level
+        #     l_pix = self.MLoss(pred, gt).to(self.device)
 
-            # GAN loss at this level
-            fake_g_pred = discriminator(pred)
-            l_gan = self.GLoss(fake_g_pred, True, is_disc=False)
+        #     # GAN loss at this level
+        #     fake_g_pred = discriminator(pred)
+        #     l_gan = self.GLoss(fake_g_pred, True, is_disc=False)
 
-            # Weighted loss
+        #     # Weighted loss
 
-            level_loss = weight * (l_pix + l_gan)
-            # print(f"At level {level}, mse loss si {l_pix}")
-            # print(f"At level {level},gan loss is {l_gan}")
-            # print(f"At level {level},loss si {level_loss}")
-            total_loss += level_loss
+        #     level_loss = weight * (l_pix + l_gan)
+        #     # print(f"At level {level}, mse loss si {l_pix}")
+        #     # print(f"At level {level},gan loss is {l_gan}")
+        #     # print(f"At level {level},loss si {level_loss}")
+        #     total_loss += level_loss
 
-            # Store individual level loss
-            # loss_dict[f'level_{level}'] = level_loss.item()
-        # print(f"Total loss is {total_loss}")
-        return total_loss #, loss_dict
+        #     # Store individual level loss
+        #     # loss_dict[f'level_{level}'] = level_loss.item()
+        # # print(f"Total loss is {total_loss}")
+        # return total_loss #, loss_dict
 
 
     def optimize_parameters(self, current_iter,mode='train'):
         torch.autograd.set_detect_anomaly(True)
 
-        # optimize net_g
-        for p in self.net_d1.parameters():
-            p.requires_grad = False
-        for p in self.net_d2.parameters():
-            p.requires_grad = False
-        for p in self.net_d3.parameters():
-            p.requires_grad = False
+
 
         self.optimizer_g.zero_grad()
         _,self.output = self.net_g(self.LLI)
@@ -237,54 +231,47 @@ class LPTNModel(BaseModel):
         loss_dict = OrderedDict()
         if (current_iter % self.net_d_iters == 0 and current_iter > self.net_d_init_iters):
             
+
             # pixel loss
-            discriminators = [self.net_d1, self.net_d2, self.net_d3]
-            l_g_total = self.calculate_weighted_loss(self.pyr_gt, pyr_pred, discriminators,self.levels,self.weights)
-            # Backpropagation and optimization
+            l_g_pix = self.MLoss(self.output, self.HLI).to(self.device)
+            l_g_total += l_g_pix
+            loss_dict['l_g_pix'] = l_g_pix
+
+            # gan loss
+            fake_g_pred = self.net_d(self.output)
+            l_g_gan = self.GLoss(fake_g_pred, True, is_disc=False)
+            l_g_total += l_g_gan
+            loss_dict['l_g_gan'] = l_g_gan
+            
+
             l_g_total.backward()
             self.optimizer_g.step()
 
         # optimize net_d
-        for p in self.net_d1.parameters():
-            p.requires_grad = True
-        for p in self.net_d2.parameters():
-            p.requires_grad = True
-        for p in self.net_d3.parameters():
+        for p in self.net_d.parameters():
             p.requires_grad = True
 
-        self.optimizer_d1.zero_grad()
-        self.optimizer_d2.zero_grad()
-        self.optimizer_d3.zero_grad()
+        self.optimizer_d.zero_grad()
+        pry_pred,self.output = self.net_g(self.LLI)
+        
+        #upadte each dicriminator 
 
-        # List of discriminators, their optimizers, and pyramid levels
-        discriminators = [self.net_d1, self.net_d2, self.net_d3]
-        optimizers = [self.optimizer_d1, self.optimizer_d2, self.optimizer_d3]
-        pyr_gt_levels = self.pyr_gt
-        pyr_pred_levels = pyr_pred
+        # real        
+        real_d_pred = self.net_d(self.HLI)
+        l_d_real = self.GLoss(real_d_pred, True, is_disc=True)
+        loss_dict['l_d_real'] = l_d_real
+        loss_dict['out_d_real'] = torch.mean(real_d_pred.detach())
 
-        # Loop through each discriminator
-        for i, (discriminator, optimizer, pyr_gt, pyr_pred) in enumerate(zip(discriminators, optimizers, pyr_gt_levels, pyr_pred_levels)):
-            pyr_gt = pyr_gt.detach()
-            pyr_pred = pyr_pred.detach()
-            # pyr_gt = (pyr_gt - pyr_gt.mean()) / (pyr_gt.std() + 1e-8)
-            # pyr_pred = (pyr_pred - pyr_pred.mean()) / (pyr_pred.std() + 1e-8)  
-            # Real
-            real_d_pred = discriminator(pyr_gt)
-            l_d_real = self.GLoss(real_d_pred, True, is_disc=True)
+        # fake
+        fake_d_pred = self.net_d(self.output)
+        l_d_fake = self.GLoss(fake_d_pred, False, is_disc=True)
+        loss_dict['l_d_fake'] = l_d_fake
+        loss_dict['out_d_fake'] = torch.mean(fake_d_pred.detach())
+        gradient_penalty = compute_gradient_penalty(self.net_d, self.HLI, self.output, self.device)
+        l_d = l_d_real + l_d_fake + self.gp_weight * gradient_penalty
 
-            # Fake
-            fake_d_pred = discriminator(pyr_pred)
-            l_d_fake = self.GLoss(fake_d_pred, False, is_disc=True)
-
-            # Gradient penalty
-            gradient_penalty = compute_gradient_penalty(discriminator, pyr_gt, pyr_pred, self.device)
-            l_d = l_d_real + l_d_fake + self.gp_weight * gradient_penalty
-
-            # Backpropagation and optimization
-            optimizer.zero_grad()
-            l_d.backward()
-            optimizer.step()
-
+        l_d.backward()
+        self.optimizer_d.step()
         
         visuals = self.get_current_visuals()
         input_img = visuals['Low_Limage'] 
@@ -355,7 +342,7 @@ class LPTNModel(BaseModel):
 
     def save(self, path):
         self.save_network(self.net_g, 'net_g', path+'_g.pth')
-        self.save_network(self.net_d1, 'net_d1', path+'_d.pth')
+        self.save_network(self.net_d, 'net_d1', path+'_d.pth')
         self.save_network(self.net_d2, 'net_d2', path+'_d.pth')
         self.save_network(self.net_d3, 'net_d3', path+'_d.pth')
         
