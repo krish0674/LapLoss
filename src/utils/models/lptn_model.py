@@ -38,10 +38,6 @@ class LPTNModel(BaseModel):
 
         disc1 = Discriminator1()
         disc1 = disc1.to(self.device)
-        disc2 = Discriminator2()
-        disc2 = disc2.to(self.device)
-        disc3 = Discriminator3()
-        disc3 = disc3.to(self.device)
 
         # creating model object
         model = LPTN(
@@ -63,12 +59,8 @@ class LPTNModel(BaseModel):
         self.print_network(self.net_g)
 
         self.net_d = disc1.to(self.device)
-        self.net_d2 = disc2.to(self.device)
-        self.net_d3 = disc3.to(self.device)
 
-        self.print_network(self.net_1)
-        self.print_network(self.net_d2)
-        self.print_network(self.net_d3)
+        self.print_network(self.net_d)
 
 
         self.init_training_settings()
