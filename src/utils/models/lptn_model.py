@@ -89,8 +89,7 @@ class LPTNModel(BaseModel):
     def init_training_settings(self):
         self.net_g.train()
         self.net_d.train()
-        self.net_d2.train()
-        self.net_d3.train()
+
         self.optimizers = []
         self.gp_weight = 100
         self.net_d_iters = 1
