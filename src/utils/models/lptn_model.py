@@ -14,6 +14,7 @@ from .archs.LPTN_paper_arch import LPTNPaper
 from .archs.lptn import LPTN
 
 from .archs.LPTN_paper_arch import Lap_Pyramid_Conv
+from .optimizer import SOAP
 from .archs.discriminator_arch import Discriminator1,Discriminator2,Discriminator3
 from .losses.losses import MSELoss, GANLoss
 
@@ -46,7 +47,7 @@ class LPTNModel(BaseModel):
         model = LPTN(
         nrb_low =self.nrb_low,
         nrb_high =self.nrb_high,
-        #nrb_top =self.nrb_top,
+        nrb_top =self.nrb_top,
         num_high= self.num_high,
         device=self.device,
         )
@@ -114,8 +115,10 @@ class LPTNModel(BaseModel):
             if v.requires_grad:
                 optim_params.append(v)
     
-        self.optimizer_g = torch.optim.Adam(optim_params,
-                                                 lr=0.0001, weight_decay=0, betas=[0.9, 0.99])                     
+        # self.optimizer_g = torch.optim.Adam(optim_params,
+        #                                          lr=0.001, weight_decay=0.01, betas=[0.9, 0.99])     
+        self.optimizer_g = SOAP(params=optim_params,lr = 1e-3, betas=(.95, .95), weight_decay=.01, precondition_frequency=10)
+                
         self.optimizers.append(self.optimizer_g)
 
         # optimizer d
@@ -193,7 +196,8 @@ class LPTNModel(BaseModel):
             gt = pyr_gt[level]
             pred = pyr_pred[level]
             discriminator = discriminators[level]
-            # print(f"at level {level} shape is {gt.shape}")
+            # pred = (pred - pred.mean()) / (pred.std() + 1e-8)
+            # gt = (gt - gt.mean()) / (gt.std() + 1e-8)            # print(f"at level {level} shape is {gt.shape}")
             # Pixel loss at this level
             l_pix = self.MLoss(pred, gt).to(self.device)
 
@@ -202,12 +206,16 @@ class LPTNModel(BaseModel):
             l_gan = self.GLoss(fake_g_pred, True, is_disc=False)
 
             # Weighted loss
+
             level_loss = weight * (l_pix + l_gan)
+            # print(f"At level {level}, mse loss si {l_pix}")
+            # print(f"At level {level},gan loss is {l_gan}")
+            # print(f"At level {level},loss si {level_loss}")
             total_loss += level_loss
 
             # Store individual level loss
             # loss_dict[f'level_{level}'] = level_loss.item()
-
+        # print(f"Total loss is {total_loss}")
         return total_loss #, loss_dict
 
 
@@ -258,6 +266,8 @@ class LPTNModel(BaseModel):
         for i, (discriminator, optimizer, pyr_gt, pyr_pred) in enumerate(zip(discriminators, optimizers, pyr_gt_levels, pyr_pred_levels)):
             pyr_gt = pyr_gt.detach()
             pyr_pred = pyr_pred.detach()
+            # pyr_gt = (pyr_gt - pyr_gt.mean()) / (pyr_gt.std() + 1e-8)
+            # pyr_pred = (pyr_pred - pyr_pred.mean()) / (pyr_pred.std() + 1e-8)  
             # Real
             real_d_pred = discriminator(pyr_gt)
             l_d_real = self.GLoss(real_d_pred, True, is_disc=True)
@@ -271,6 +281,7 @@ class LPTNModel(BaseModel):
             l_d = l_d_real + l_d_fake + self.gp_weight * gradient_penalty
 
             # Backpropagation and optimization
+            optimizer.zero_grad()
             l_d.backward()
             optimizer.step()
 
@@ -374,17 +385,16 @@ class LPTNModel(BaseModel):
         img = output[0]
         img = (img * 255.).astype(np.uint8)  # Scale to [0, 255]
 
-        mean = [0.41441402, 0.41269127, 0.37940571]
-        std = [0.33492465, 0.33443474, 0.33518072]
-
         input = input.detach().cpu().numpy()
         input = np.transpose(input, (0, 2, 3, 1))  # CHW to HWC
         img_in = input[0]
         #img_in = (img_in*std)+mean
         img_in = (img_in * 255.).astype(np.uint8)
+        # label=(label*255).astype(np.uint8)
+        # #print(img.shape)
+        # #print(img_in.shape)
+        # print("imaged")
+        # cv2.imwrite(os.path.join(save_dir, f'label_{unique_index}.png'), img)
 
-        #print(img.shape)
-        #print(img_in.shape)
-        print("imaged")
         cv2.imwrite(os.path.join(save_dir, f'output_image_{unique_index}.png'), img)
         cv2.imwrite(os.path.join(save_dir, f'input_image_{unique_index}.png'), img_in)
