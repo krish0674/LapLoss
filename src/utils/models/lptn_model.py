@@ -40,10 +40,10 @@ class LPTNModel(BaseModel):
         disc1 = disc1.to(self.device)
 
         # creating model object
-        model = LPTNPaper(
+        model = LPTN(
         nrb_low =self.nrb_low,
         nrb_high =self.nrb_high,
-        nrb_top =self.nrb_top,
+        # nrb_top =self.nrb_top,
         num_high= self.num_high,
         device=self.device,
         )
