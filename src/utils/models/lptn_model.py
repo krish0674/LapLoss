@@ -334,8 +334,8 @@ class LPTNModel(BaseModel):
     def save(self, path):
         self.save_network(self.net_g, 'net_g', path+'_g.pth')
         self.save_network(self.net_d, 'net_d1', path+'_d.pth')
-        self.save_network(self.net_d2, 'net_d2', path+'_d.pth')
-        self.save_network(self.net_d3, 'net_d3', path+'_d.pth')
+        # self.save_network(self.net_d2, 'net_d2', path+'_d.pth')
+        # self.save_network(self.net_d3, 'net_d3', path+'_d.pth')
         
     def visualise(self, save_dir='output_images', iteration=0):
         _,output = self.net_g(self.LLI)
