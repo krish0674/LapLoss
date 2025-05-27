@@ -389,6 +389,7 @@ class SICEAllImagesTestDataset(Dataset):
         label_file = None
         for ext in [".PNG", ".JPG", ".JPEG"]:
             potential_label = os.path.join(label_path, f"{self.test_folder_id}{ext}")
+            print(potential_label)
             if os.path.exists(potential_label):
                 label_file = potential_label
                 break
