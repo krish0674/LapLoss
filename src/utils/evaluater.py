@@ -14,7 +14,7 @@ def eval(root_dir, lr,loss_weight = 2000,gan_type = 'standard' ,device='cuda', n
     from torch.utils.data import DataLoader
 
     test_dataset = SICEAllImagesTestDataset(
-        root_dir="path/to/root",
+        root_dir="/kaggle/input/sicedataset",
         test_folder_id="1"  # or any other folder you want to fix as test
     )
 
