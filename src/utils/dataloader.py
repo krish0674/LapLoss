@@ -378,7 +378,7 @@ class SICEMixTest(BaseDataset):
 class SICEAllImagesTestDataset(Dataset):
     def __init__(self, root_dir, exposure_type="all", test_folder_id="001"):
         self.root_dir = root_dir
-        self.test_folder_id = str(test_folder_id).zfill(3)
+        self.test_folder_id = test_folder_id
         self.data = []
         self.augumentation = get_testing_augmentation()
 
