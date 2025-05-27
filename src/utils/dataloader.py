@@ -235,27 +235,6 @@ class SICETestDataset(Dataset):
             augmented = self.augumentation(image1=label_image, image=input_image)
             label_image, input_image = augmented['image1'], augmented['image']
 
-        # if random.random() < 0.5:
-        #     input_image = cv2.flip(input_image, 1)  # Horizontal flip
-        #     label_image = cv2.flip(label_image, 1)
-        
-        # if random.random() < 0.5:
-        #     angle = random.uniform(-15, 15)  # Random rotation
-        #     h, w = input_image.shape[:2]
-        #     center = (w // 2, h // 2)
-        #     rot_mat = cv2.getRotationMatrix2D(center, angle, 1.0)
-        #     input_image = cv2.warpAffine(input_image, rot_mat, (w, h))
-        #     label_image = cv2.warpAffine(label_image, rot_mat, (w, h))
-        
-        # if random.random() < 0.5:
-        #     scale_factor = random.uniform(0.8, 1.2)  # Random scaling
-        #     h, w = input_image.shape[:2]
-        #     input_image = cv2.resize(input_image, (int(w * scale_factor), int(h * scale_factor)))
-        #     label_image = cv2.resize(label_image, (int(w * scale_factor), int(h * scale_factor)))
-        
-        # if random.random() < 0.3:
-        #     input_image = cv2.GaussianBlur(input_image, (5, 5), 0) #Gaussian Blur
-
         input_image = input_image / 255.0
         label_image = label_image / 255.0
 
@@ -394,4 +373,61 @@ class SICEMixTest(BaseDataset):
         input_image = torch.tensor(input_image, dtype=torch.float32).permute(2, 0, 1)
         label_image = torch.tensor(label_image, dtype=torch.float32).permute(2, 0, 1)
         
+        return input_image, label_image
+
+class SICEAllImagesTestDataset(Dataset):
+    def __init__(self, root_dir, exposure_type="all", test_folder_id="001"):
+        self.root_dir = root_dir
+        self.test_folder_id = str(test_folder_id).zfill(3)
+        self.data = []
+        self.augumentation = get_testing_augmentation()
+
+        part_path = os.path.join(root_dir, "Dataset_Part1/Dataset_Part1")
+        label_path = os.path.join(part_path, "Label")
+        folder_path = os.path.join(part_path, self.test_folder_id)
+
+        label_file = None
+        for ext in [".PNG", ".JPG", ".JPEG"]:
+            potential_label = os.path.join(label_path, f"{self.test_folder_id}{ext}")
+            if os.path.exists(potential_label):
+                label_file = potential_label
+                break
+
+        if not label_file:
+            raise FileNotFoundError(f"No label file found for folder {self.test_folder_id}")
+
+        image_files = [
+            os.path.join(folder_path, img_file)
+            for img_file in sorted(os.listdir(folder_path))
+            if img_file.endswith((".PNG", ".JPG", ".JPEG"))
+        ]
+
+        if len(image_files) not in [7, 9]:
+            raise ValueError(f"Folder {self.test_folder_id} must contain 7 or 9 images.")
+
+        for img_file in image_files:
+            self.data.append((img_file, label_file))
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        img_path, label_path = self.data[idx]
+
+        label_image = cv2.imread(label_path)
+        input_image = cv2.imread(img_path)
+
+        label_image = cv2.cvtColor(label_image, cv2.COLOR_BGR2RGB)
+        input_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB)
+
+        if self.augumentation:
+            augmented = self.augumentation(image1=label_image, image=input_image)
+            label_image, input_image = augmented['image1'], augmented['image']
+
+        input_image = input_image / 255.0
+        label_image = label_image / 255.0
+
+        input_image = torch.tensor(input_image, dtype=torch.float32).permute(2, 0, 1)
+        label_image = torch.tensor(label_image, dtype=torch.float32).permute(2, 0, 1)
+
         return input_image, label_image
