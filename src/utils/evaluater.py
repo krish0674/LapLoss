@@ -9,13 +9,13 @@ from torch.utils.data import DataLoader, Subset
 from .models.lptn_model import LPTNModel
 # from torchsummary import summary
 
-def eval(root_dir, lr,loss_weight = 2000,gan_type = 'standard' ,device='cuda', nrb_top = 4, nrb_high = 5, nrb_low = 3,exposure='over',path='/kaggle/working/best_model_g.pth'):
+def eval(root_dir, lr,loss_weight = 2000,gan_type = 'standard' ,device='cuda', nrb_top = 4, nrb_high = 5, nrb_low = 3,exposure='over',path='/kaggle/working/best_model_g.pth',tf="10"):
 
     from torch.utils.data import DataLoader
 
     test_dataset = SICEAllImagesTestDataset(
         root_dir="/kaggle/input/sicedataset",
-        test_folder_id="1"  # or any other folder you want to fix as test
+        test_folder_id=tf  # or any other folder you want to fix as test
     )
 
     test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
@@ -269,5 +269,6 @@ def eval_model(configs):
         configs['nrb_high'],
         configs['nrb_low'],
         configs['exposure'],
-        configs['model_path']
+        configs['model_path'],
+        configs['tf']
         )

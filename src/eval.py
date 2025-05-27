@@ -20,7 +20,8 @@ def main(args):
         'nrb_high' : args.nrb_high,
         'nrb_low' : args.nrb_low,
         'model_path' : args.model_path,
-        'exposure' : args.exposure
+        'exposure' : args.exposure,
+        'tf' : args.tf
     }
 
     eval_model(config)
@@ -44,6 +45,7 @@ if __name__ == '__main__':
     parser.add_argument('--nrb_top', type=int, required=False,default=3)
     parser.add_argument('--exposure', type=str, required=False,default='over')
     parser.add_argument('--model_path', type=str, required=False, default='/kaggle/working/repo/src/best_model_g.pth')
+    parser.add_argument('--tf', type=str, required=False, default='10')
 
     arguments = parser.parse_args()
     main(arguments)
