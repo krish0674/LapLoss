@@ -138,7 +138,6 @@ class LPTNModel(BaseModel):
         gt_reshaped = gt.view(B * C, H, W)
         pred_reshaped = pred.view(B * C, H, W)
 
-
         U_g, S_g, Vh_g = torch.linalg.svd(gt_reshaped, full_matrices=False)
         U_p, S_p, Vh_p = torch.linalg.svd(pred_reshaped, full_matrices=False)
 
@@ -157,13 +156,9 @@ class LPTNModel(BaseModel):
 
         return total_loss, loss_dict
 
-
-
-
     def optimize_parameters(self, current_iter):
         torch.autograd.set_detect_anomaly(True)
 
-        # optimize net_g
         for p in self.net_d1.parameters():
             p.requires_grad = False
 
@@ -194,7 +189,7 @@ class LPTNModel(BaseModel):
         real_d_pred = discriminator(gt)
         l_d_real = self.GLoss(real_d_pred, True, is_disc=True)
 
-        # --- Fake ---
+
         fake_d_pred = discriminator(pred)
         l_d_fake = self.GLoss(fake_d_pred, False, is_disc=True)
 
@@ -202,7 +197,6 @@ class LPTNModel(BaseModel):
 
         l_d = l_d_real + l_d_fake + self.gp_weight * gradient_penalty
 
-        # --- Backpropagation ---
         l_d.backward()
         optimizer.step()
 
@@ -246,22 +240,16 @@ class LPTNModel(BaseModel):
             x, y, z = self.calculate_metrics(result_img,HLI_img)
             psnr = x + psnr
             ssim = y + ssim
-            #mssim = q + mssim
             lpips = z + lpips
 
-
-        # print(psnr)
-        # print(ssim)
         psnr /= (idx + 1)
         ssim /= (idx + 1)
-        #mssim /= (idx + 1)
         lpips /= (idx + 1)
         
         print(f'Val PSNR {psnr}')
         print(f'Val SSIM {ssim}')
         print(f'Val LPIPS {lpips}')
                 
-        #return psnr, ssim, mssim, lpips
         return psnr, ssim, lpips
     
     def get_current_visuals(self):
@@ -278,10 +266,6 @@ class LPTNModel(BaseModel):
         
     def visualise(self, save_dir='output_images', iteration=0):
         output = self.net_g(self.LLI)
-        # print(self.LLI)
-        # print(self.LLI.shape)
-        # print(self.HLI.shape)
-        # print(output.shape)
         input = self.LLI
         label = self.HLI
         
@@ -297,22 +281,17 @@ class LPTNModel(BaseModel):
         cv2.imwrite(os.path.join(save_dir, f'label_image_{unique_index}.png'), label)
 
         output = output.detach().cpu().numpy()
-        output = np.transpose(output, (0, 2, 3, 1))  # CHW to HWC
-        #print(output.shape)
+        output = np.transpose(output, (0, 2, 3, 1))  
         img = output[0]
-        img = (img * 255.).astype(np.uint8)  # Scale to [0, 255]
+        img = (img * 255.).astype(np.uint8) 
 
         mean = [0.41441402, 0.41269127, 0.37940571]
         std = [0.33492465, 0.33443474, 0.33518072]
 
         input = input.detach().cpu().numpy()
-        input = np.transpose(input, (0, 2, 3, 1))  # CHW to HWC
+        input = np.transpose(input, (0, 2, 3, 1)) 
         img_in = input[0]
-        #img_in = (img_in*std)+mean
         img_in = (img_in * 255.).astype(np.uint8)
-
-        #print(img.shape)
-        #print(img_in.shape)
         print("imaged")
         cv2.imwrite(os.path.join(save_dir, f'output_image_{unique_index}.png'), img)
         cv2.imwrite(os.path.join(save_dir, f'input_image_{unique_index}.png'), img_in)
