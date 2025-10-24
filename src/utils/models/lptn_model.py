@@ -120,50 +120,44 @@ class LPTNModel(BaseModel):
         """
         self.LLI = LLI.to(self.device)
         self.HLI = HLI.to(self.device)
-        kernel = torch.tensor([[1., 4., 6., 4., 1],
-                                        [4., 16., 24., 16., 4.],
-                                        [6., 24., 36., 24., 6.],
-                                        [4., 16., 24., 16., 4.],
-                                        [1., 4., 6., 4., 1.]])
-        kernel /= 256.
-        kernel = kernel.repeat(3, 1, 1, 1)
 
     def calculate_svd_loss(self, gt, pred, discriminator):
-
-        assert gt.shape == pred.shape, "Predicted and ground truth images must have the same shape"
-
+        """
+        Calculates SVD-based reconstruction loss + GAN loss.
+        Args:
+            gt: Ground truth image tensor (B, C, H, W)
+            pred: Generated image tensor (B, C, H, W)
+            discriminator: Single discriminator model
+        Returns:
+            total_loss: Combined loss (tensor)
+            loss_dict: Dictionary with individual components
+        """
+        assert gt.shape == pred.shape, "Ground truth and prediction must have same shape"
         B, C, H, W = gt.shape
-        svd_loss = 0.0
 
-        for b in range(B):
-            for c in range(C):
-                gt_matrix = gt[b, c, :, :].detach().cpu().numpy()
-                pred_matrix = pred[b, c, :, :].detach().cpu().numpy()
+        gt_reshaped = gt.view(B * C, H, W)
+        pred_reshaped = pred.view(B * C, H, W)
 
-                U_gt, S_gt, Vt_gt = np.linalg.svd(gt_matrix, full_matrices=False)
-                U_pred, S_pred, Vt_pred = np.linalg.svd(pred_matrix, full_matrices=False)
 
-                s_loss = torch.tensor(np.mean((S_gt - S_pred) ** 2), device=self.device)
+        U_g, S_g, Vh_g = torch.linalg.svd(gt_reshaped, full_matrices=False)
+        U_p, S_p, Vh_p = torch.linalg.svd(pred_reshaped, full_matrices=False)
 
-                u_loss = torch.tensor(np.mean((U_gt - U_pred) ** 2), device=self.device)
-                v_loss = torch.tensor(np.mean((Vt_gt - Vt_pred) ** 2), device=self.device)
+        svd_loss = torch.mean((S_g - S_p) ** 2)
 
-                svd_loss += (s_loss + 0.5 * (u_loss + v_loss)) 
+        fake_pred = discriminator(pred)
+        gan_loss = self.GLoss(fake_pred, True, is_disc=False)
 
-        svd_loss = svd_loss / (B * C)
-
-        fake_g_pred = discriminator(pred)
-        gan_loss = self.GLoss(fake_g_pred, True, is_disc=False)
-
-        total_loss = self.loss_weight*svd_loss + gan_loss
+        total_loss = self.loss_weight * svd_loss + gan_loss
 
         loss_dict = {
             "svd_loss": svd_loss.item(),
             "gan_loss": gan_loss.item(),
-            "total_loss": total_loss.item()
+            "total_loss": total_loss.item(),
         }
 
         return total_loss, loss_dict
+
+
 
 
     def optimize_parameters(self, current_iter):
@@ -283,7 +277,7 @@ class LPTNModel(BaseModel):
         self.save_network(self.net_d1, 'net_d1', path+'_d.pth')
         
     def visualise(self, save_dir='output_images', iteration=0):
-        _,output = self.net_g(self.LLI)
+        output = self.net_g(self.LLI)
         # print(self.LLI)
         # print(self.LLI.shape)
         # print(self.HLI.shape)
