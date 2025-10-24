@@ -8,15 +8,12 @@ import os
 import matplotlib.pyplot as plt
 from utils.models.base_model import BaseModel
 from utils.models.losses import compute_gradient_penalty
-
 from torch import nn
 from .archs.LPTN_paper_arch import LPTNPaper
 from .archs.lptn import LPTN
-
 from .archs.LPTN_paper_arch import Lap_Pyramid_Conv
-from .archs.discriminator_arch import Discriminator1,Discriminator2,Discriminator3
+from .archs.discriminator_arch import Discriminator1
 from .losses.losses import MSELoss, GANLoss
-
 loss_module = importlib.import_module('utils.models.losses')
 
 class LPTNModel(BaseModel):
@@ -28,7 +25,7 @@ class LPTNModel(BaseModel):
         self.nrb_low = nrb_low
         self.nrb_high = nrb_high
         self.nrb_top = nrb_top
-        self.num_high = 2  
+        self.num_high = 2
         self.loss_weight = loss_weight
 
         self.device = torch.device(device)
