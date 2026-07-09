@@ -1,4 +1,6 @@
-# LapLoss: Multi-Level Adversarial Supervision on Laplacian Pyramids for Contrast Enhancement
+# LapLoss: Laplacian Pyramid-based Multiscale Loss for Image Translation
+
+Official implementation of **"LapLoss: Laplacian Pyramid-based Multiscale Loss for Image Translation"** by Krish Didwania, Ishaan Gakhar, Prakhar Arya, and Sanskriti Labroo (Manipal Institute of Technology), accepted at the **DeLTa Workshop, ICLR 2025 (ICLRW)**. Paper: [arXiv:2503.05974](https://arxiv.org/abs/2503.05974). An extended journal version is in preparation; this repository accompanies both.
 
 This repository contains the reference implementation of a contrast-enhancement framework that applies **adversarial supervision independently at each level of a Laplacian pyramid**. Instead of a single discriminator operating on the full-resolution output, each pyramid band is matched against its ground-truth counterpart by a dedicated discriminator, so the generator receives localized, frequency-aware gradients: fine edge detail is supervised at high-frequency bands while global brightness and structure are supervised at the low-frequency residual. The `main` branch instantiates this idea on the **Laplacian Pyramid Transformer Network (LPTN)** backbone and is trained and evaluated on the SICE dataset.
 
@@ -84,14 +86,20 @@ A CUDA-capable GPU is assumed (`device='cuda'` by default). Install the `torch` 
 
 ## Datasets
 
-The framework is trained and tested on **SICE** and its degraded variants.
+The framework is trained and tested on **SICE** and on its mixed-exposure variants **SICE_Grad** and **SICE_Mix**.
 
-- **SICE v1 / v2** — https://github.com/csjcai/SICE
-- **SICE_Grad / SICE_Mix** — https://drive.google.com/file/d/1gii4AEyyPp_kagfa7TyugnNPvUhkX84x/view
+| Dataset | Role | Source | Original paper |
+|---|---|---|---|
+| SICE (v1 / v2) | Train / val / test | [github.com/csjcai/SICE](https://github.com/csjcai/SICE) (images hosted on the Google Drive / BaiduYun links in that repo) | Cai et al., *IEEE TIP* 2018 |
+| SICE_Grad, SICE_Mix | Test only (mixed exposure) | Official: [github.com/ShenZheng2000/LLIE_Survey](https://github.com/ShenZheng2000/LLIE_Survey) · Mirror used here: [Google Drive](https://drive.google.com/file/d/1gii4AEyyPp_kagfa7TyugnNPvUhkX84x/view) | Zheng et al., arXiv:2212.10772, 2022 |
+
+SICE contains 589 multi-exposure scene sequences (7 or 9 images each, from under- to over-exposed) with a single well-exposed reference per scene. SICE_Grad and SICE_Mix are derived from SICE by cutting each reference into panels and re-tiling them: SICE_Grad arranges panels from low to high exposure (with some normally-exposed panels randomly placed), while SICE_Mix permutes panels at random. Both are reshaped to roughly 600×900 and are meant purely as **test** sets for uneven-illumination robustness.
 
 The links are provided for reference only; all rights to the data belong to the original authors, and any use must comply with their terms.
 
-The dataloaders expect the following on-disk layout. `Dataset_Part2` is used for **training/validation**; `Dataset_Part1` for the **per-folder exposure test**; the `SICE_Grad` / `SICE_Mix` folders (with a shared `SICE_Reshape` label folder) for the degraded-variant tests.
+### Expected directory layout
+
+The dataloaders expect the following on-disk layout. `Dataset_Part2` is used for **training/validation**; `Dataset_Part1` for the **per-folder exposure test**; the `SICE_Grad` / `SICE_Mix` folders (with a shared `SICE_Reshape` label folder) for the mixed-exposure tests.
 
 ```
 <root_dir>/
@@ -106,10 +114,20 @@ The dataloaders expect the following on-disk layout. `Dataset_Part2` is used for
 └── SICE_Reshape/         # shared labels for Grad/Mix
 ```
 
+### How the data is partitioned
+
+You do **not** need to pre-split anything manually — the partitioning is done in code from the folder structure above:
+
+- **Train / validation** come from `Dataset_Part2`. `SICETrainDataset` lists the numbered scene folders, shuffles them with a fixed `seed=42`, and takes the first 80% as training and the remaining 20% as validation (`split_ratio=0.8`). The split is at the *scene* level, so no scene appears in both train and val.
+- **Test (standard SICE)** comes from `Dataset_Part1` via `SICEAllImagesTestDataset` (all exposures of a single scene selected with `--tf`) or `SICETestDataset` (a fixed index list, one exposure per scene).
+- **Test (mixed exposure)** comes from the `SICE_Grad/` and `SICE_Mix/` input folders, each paired against the shared `SICE_Reshape/` references, via `SICEGradTest` / `SICEMixTest`.
+
+To reproduce the paper's setup exactly: download SICE and place its `Dataset_Part1` and `Dataset_Part2` (each with its `Label/` subfolder) under `<root_dir>`; download the SICE_Grad/SICE_Mix archive and place `SICE_Grad/`, `SICE_Mix/`, and `SICE_Reshape/` under the same `<root_dir>`. Train on `Dataset_Part2` and report on all four test sets. If you change `--split_ratio` or the `seed`, record it — the numbers depend on the split.
+
 Loader behaviour to be aware of when reproducing numbers:
 
 - Images are resized to **608 × 896**; portrait images are rotated to landscape; pixels are scaled to `[0, 1]`. Training augmentation adds vertical/horizontal flips and a mild shift-scale-rotate.
-- **Train/val split** is an 80/20 split over *scene folders*, shuffled with a fixed `seed=42`.
+- **Train/val split** is the 80/20 scene-level split described above, shuffled with a fixed `seed=42`.
 - **Exposure selection** (`--exposure`): `under` keeps the first half of each scene's exposures, `over` keeps the second half, `both` keeps all. The reported configuration uses `over`.
 - One caveat: the validation split is constructed without passing an exposure type, so validation defaults to `both` even when training on `over`. Keep this in mind if you tune on validation metrics.
 
@@ -197,14 +215,14 @@ Please read these before quoting numbers — several defaults do not behave as t
 - **LR schedule.** `MultiStepRestartLR` with milestones `[50000, 100000, 200000, 300000]` and `gamma=0.5` (iteration-based). Confirm this matches your epoch/iteration budget.
 - **Determinism.** Only the dataset folder shuffle is seeded (`seed=42`). `torch`, `numpy`, and CUDA RNGs are not globally seeded, so runs are not bit-reproducible. For the camera-ready, add a seeding utility at startup, e.g.:
 
-  ```python
+```python
   import torch, numpy as np, random
   def set_seed(s=42):
       random.seed(s); np.random.seed(s)
       torch.manual_seed(s); torch.cuda.manual_seed_all(s)
       torch.backends.cudnn.deterministic = True
       torch.backends.cudnn.benchmark = False
-  ```
+```
 
 - **Metric convention.** PSNR/SSIM are computed after clamping to `[0, 1]`, scaling to `[0, 255]`, and casting to `int` then back to `float` (i.e. on 8-bit-quantized images). LPIPS is computed on `[-1, 1]`-normalized inputs with the VGG backbone. Match this convention when comparing against other methods.
 - **Import side effect.** `losses/metrics.py` runs an LPIPS demo and prints a loss value at import time (bottom of the file). It is harmless but noisy and downloads VGG weights; consider guarding it under `if __name__ == "__main__":`.
@@ -231,15 +249,70 @@ Fill in with your measured numbers before submission. The metrics below are exac
 
 ## Citation
 
+If you use this code, the method, or the checkpoints, please cite LapLoss (accepted at the **DeLTa Workshop, ICLR 2025**):
+
 ```bibtex
-@misc{laploss,
-  title   = {LapLoss: Multi-Level Adversarial Supervision on Laplacian Pyramids for Contrast Enhancement},
-  author  = {<authors>},
-  year    = {<year>},
-  note    = {<venue / preprint id>}
+@article{didwania2025laploss,
+  title   = {LapLoss: Laplacian Pyramid-based Multiscale Loss for Image Translation},
+  author  = {Didwania, Krish and Gakhar, Ishaan and Arya, Prakhar and Labroo, Sanskriti},
+  journal = {arXiv preprint arXiv:2503.05974},
+  note    = {Accepted at the DeLTa Workshop, ICLR 2025},
+  year    = {2025}
+}
+```
+
+This work builds directly on the following; please also cite them where relevant:
+
+```bibtex
+@inproceedings{liang2021high,
+  title     = {High-Resolution Photorealistic Image Translation in Real-Time: A Laplacian Pyramid Translation Network},
+  author    = {Liang, Jie and Zeng, Hui and Zhang, Lei},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2021}
+}
+
+@article{kasliwal2024lapgsr,
+  title   = {LapGSR: Laplacian Reconstructive Network for Guided Thermal Super-Resolution},
+  author  = {Kasliwal, Aditya and Gakhar, Ishaan and Kamani, Aryan and Seth, Pratinav and Verma, Ujjwal},
+  journal = {arXiv preprint arXiv:2411.07750},
+  year    = {2024}
+}
+
+@article{vyas2024soap,
+  title   = {SOAP: Improving and Stabilizing Shampoo using Adam},
+  author  = {Vyas, Nikhil and Morwani, Depen and Zhao, Rosie and Kwun, Mujin and Shapira, Itai and Brandfonbrener, David and Janson, Lucas and Kakade, Sham},
+  journal = {arXiv preprint arXiv:2409.11321},
+  year    = {2024}
+}
+
+@inproceedings{zhang2018unreasonable,
+  title     = {The Unreasonable Effectiveness of Deep Features as a Perceptual Metric},
+  author    = {Zhang, Richard and Isola, Phillip and Efros, Alexei A. and Shechtman, Eli and Wang, Oliver},
+  booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year      = {2018}
+}
+
+@article{cai2018learning,
+  title     = {Learning a Deep Single Image Contrast Enhancer from Multi-Exposure Images},
+  author    = {Cai, Jianrui and Gu, Shuhang and Zhang, Lei},
+  journal   = {IEEE Transactions on Image Processing},
+  volume    = {27},
+  number    = {4},
+  pages     = {2049--2062},
+  year      = {2018},
+  publisher = {IEEE}
+}
+
+@article{zheng2022low,
+  title   = {Low-Light Image and Video Enhancement: A Comprehensive Survey and Beyond},
+  author  = {Zheng, Shen and Ma, Yiling and Pan, Jinqian and Lu, Changjie and Gupta, Gaurav},
+  journal = {arXiv preprint arXiv:2212.10772},
+  year    = {2022}
 }
 ```
 
 ## Acknowledgements
 
-This implementation builds on the **LPTN** architecture for Laplacian-pyramid image-to-image translation, the **SOAP** optimizer (arXiv:2409.11321), the **LPIPS** perceptual metric, and the **SICE** dataset and its SICE_Grad / SICE_Mix degradations. All rights to third-party assets remain with their original authors.
+This repository accompanies **"LapLoss: Laplacian Pyramid-based Multiscale Loss for Image Translation"** by Krish Didwania, Ishaan Gakhar, Prakhar Arya, and Sanskriti Labroo (Manipal Institute of Technology, Manipal Academy of Higher Education), accepted at the **DeLTa Workshop, ICLR 2025**. All four authors contributed equally.
+
+The method builds on several prior works, whose authors we gratefully acknowledge: the **Laplacian Pyramid Translation Network (LPTN)** of Liang, Zeng, and Zhang (CVPR 2021) and the **LapGSR** guided-super-resolution network of Kasliwal, Gakhar, Kamani, Seth, and Verma (arXiv:2411.07750, 2024), which supply the pyramidal backbones; the **SOAP** optimizer of Vyas et al. (arXiv:2409.11321, 2024); the **LPIPS** perceptual metric of Zhang et al. (CVPR 2018); the **SICE** dataset of Cai, Gu, and Zhang (IEEE TIP 2018); and the **SICE_Grad / SICE_Mix** mixed-exposure benchmarks of Zheng, Ma, Pan, Lu, and Gupta (arXiv:2212.10772, 2022). All rights to third-party code and data remain with their original authors, and their use here is subject to the respective original licenses.
