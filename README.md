@@ -168,7 +168,7 @@ python train.py \
 
 **Logging and checkpoints.** Training logs to a Weights & Biases project named `LapLoss`. The best generator (by validation SSIM) is written to `./best_model_g.pth` (discriminators to `./best_model_d.pth`) in the working directory, and is reloaded at the end of training.
 
-To run without a W&B account, either export `WANDB_MODE=offline` or replace `wandb.init(...)` with a no-op; do **not** rely on the committed key.
+To run without a W&B account, either export `WANDB_MODE=offline` or replace `wandb.init(...)` with a no-op; 
 
 ## Evaluation
 
@@ -193,7 +193,7 @@ python eval.py \
 | `--nrb_low` / `--nrb_high` / `--nrb_top` | `3` | Must match the trained model |
 | `--gan_type` | `vanilla` | Must match training for the model to instantiate consistently |
 | `--device` | `cuda` | Compute device |
-| `--key` | *(hardcoded)* | W&B key — **remove before publishing** |
+| `--key` | *(hardcoded)* | W&B key  |
 
 Evaluation reports **PSNR**, **SSIM**, **LPIPS** (VGG backbone), and **MS-SSIM**, and writes qualitative triplets (input / output / reference) via `visualise()`.
 
@@ -239,13 +239,6 @@ Fill in with your measured numbers before submission. The metrics below are exac
 | SICE_Mix | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 | SICE_Grad | _TBD_ | _TBD_ | _TBD_ | _TBD_ |
 
-## Before making the repository public
-
-- [ ] **Revoke and remove** the Weights & Biases API keys in `train.py` and `eval.py`. Treat both as compromised.
-- [ ] Add a pinned `requirements.txt` (or `environment.yml`).
-- [ ] Replace the hardcoded `/kaggle/...` paths in `eval.py` / `evaluater.py` with `--root_dir` / `--model_path`.
-- [ ] Add global seeding and, ideally, release the exact checkpoint used for the reported numbers.
-- [ ] Remove one of the duplicated `tryinit.ipynb` files (or fold the useful parts into documented scripts).
 
 ## Citation
 
