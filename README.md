@@ -26,7 +26,7 @@ Three discriminators — `Discriminator1/2/3` — supervise levels 0/1/2 respect
 ```
 LapLoss/
 ├── README.md
-├── 543.pth                           # pretrained generator checkpoint (see "Pretrained checkpoint & testing")
+├── 543.pth                           # pretrained generator checkpoint (see "Pretrained checkpoint & reproducing results")
 ├── tryinit.ipynb                     # exploratory Kaggle notebook (duplicated under src/)
 └── src/
     ├── train.py                      # training entry point (argparse + Weights & Biases)
@@ -171,55 +171,61 @@ python train.py \
 
 To run without a W&B account, either export `WANDB_MODE=offline` or replace `wandb.init(...)` with a no-op; 
 
-## Pretrained checkpoint & testing
+## Pretrained checkpoint & reproducing results
 
-A pretrained generator checkpoint, **`543.pth`**, is included at the root of this repository, so you can run testing/evaluation directly without training the model yourself.
+A pretrained generator checkpoint, **`543.pth`**, is included at the root of this repository, so you can run testing/evaluation directly without training the model yourself. The checkpoint was trained with **`nrb_low=5, nrb_high=4, nrb_top=3`** — these are now the defaults in `eval.py`, so you do not need to pass them explicitly (and they *must* match, or the state-dict load will fail).
 
 The datasets needed for testing are available on Kaggle:
 
 - **SICE** (standard test sets, `Dataset_Part1` / `Dataset_Part2`): [kaggle.com/datasets/shauryasinghrathore/sicedataset](https://www.kaggle.com/datasets/shauryasinghrathore/sicedataset)
 - **SICE_Grad & SICE_Mix** (mixed-exposure test sets): [kaggle.com/datasets/arrinu/sice-grad-and-sice-mix](https://www.kaggle.com/datasets/arrinu/sice-grad-and-sice-mix)
 
-Download them, arrange the folders as shown in the "Expected directory layout" above, and point evaluation at the checkpoint:
+**Test** (from `src/`, with the datasets arranged as in "Expected directory layout"):
 
 ```bash
 cd src
-python eval.py \
-  --root_dir /path/to/SICE_root \
-  --model_path ../543.pth \
-  --exposure over \
-  --tf 10 \
-  --nrb_low 3 --nrb_high 3 --nrb_top 3
+# Standard SICE: all exposures of one scene folder (--tf) from Dataset_Part1
+python eval.py --root_dir /path/to/SICE_root --dset sice --tf 10 --model_path ../543.pth
+
+# Mixed-exposure benchmarks (root must contain SICE_Grad / SICE_Mix / SICE_Reshape)
+python eval.py --root_dir /path/to/SICEGM_root --dset grad --model_path ../543.pth
+python eval.py --root_dir /path/to/SICEGM_root --dset mix  --model_path ../543.pth
+```
+
+**Train** from scratch:
+
+```bash
+cd src
+python train.py --root_dir /path/to/SICE_root --exposure over
 ```
 
 (If you are running on Kaggle, the two datasets above can be attached to a notebook directly and used as `--root_dir`.)
 
 ## Evaluation
 
-> **Fix required before this runs outside the original Kaggle environment.** In `utils/evaluater.py`, `eval()` hardcodes `root_dir="/kaggle/input/sicedataset"` internally (the passed `--root_dir` is ignored), and `--model_path` defaults to a `/kaggle/working/...` path. Point both at your local paths before running. As written, only the `SICEAllImagesTestDataset` block (a single scene folder, id `--tf`) is active; the other test sets (`SICETestDataset`, `SICEMixTest`, `SICEGradTest`) are present but commented out.
+Evaluation is a pure inference pass: the checkpoint is loaded, the generator is run under `torch.no_grad()`, and metrics are averaged over the test set. No weights are updated during testing, and no qualitative images are written (the old `visualise()` call has been removed from the eval loop).
 
 ```bash
 cd src
 python eval.py \
   --root_dir /path/to/SICE_root \
-  --model_path /path/to/best_model_g.pth \
-  --exposure over \
-  --tf 10 \
-  --nrb_low 3 --nrb_high 3 --nrb_top 3
+  --model_path ../543.pth \
+  --dset sice \
+  --tf 10
 ```
 
 | Argument | Default | Meaning |
 |---|---|---|
-| `--root_dir` | — | Dataset root (**note:** overridden inside `eval()` — patch this) |
-| `--model_path` | `/kaggle/working/...` | Generator checkpoint to load (patch to a local path) |
-| `--exposure` | `over` | Exposure subset for the test set |
-| `--tf` | `10` | Scene-folder id used as the fixed test folder |
-| `--nrb_low` / `--nrb_high` / `--nrb_top` | `3` | Must match the trained model |
+| `--root_dir` | — (required) | Dataset root laid out as above |
+| `--model_path` | `../543.pth` | Generator checkpoint to load |
+| `--dset` | `sice` | Test set: `sice` (Dataset_Part1 scene folder), `grad` (SICE_Grad), `mix` (SICE_Mix) |
+| `--exposure` | `over` | Exposure subset (only relevant for the standard SICE loaders) |
+| `--tf` | `10` | Scene-folder id used as the fixed test folder (`--dset sice` only) |
+| `--nrb_low` / `--nrb_high` / `--nrb_top` | `5` / `4` / `3` | Must match the trained model (defaults match `543.pth`) |
 | `--gan_type` | `vanilla` | Must match training for the model to instantiate consistently |
 | `--device` | `cuda` | Compute device |
-| `--key` | *(hardcoded)* | W&B key  |
 
-Evaluation reports **PSNR**, **SSIM**, **LPIPS** (VGG backbone), and **MS-SSIM**, and writes qualitative triplets (input / output / reference) via `visualise()`.
+Evaluation reports **PSNR**, **SSIM**, **LPIPS** (VGG backbone), and **MS-SSIM**.
 
 ## Model complexity
 
@@ -254,7 +260,7 @@ Please read these before quoting numbers — several defaults do not behave as t
 
 ## Results
 
-Fill in with your measured numbers before submission. The metrics below are exactly the ones the evaluation code emits; do not carry over placeholder values.
+The metrics below are exactly the ones the evaluation code emits. They can be reproduced with the included `543.pth` checkpoint and the Kaggle datasets linked above, using the test commands in "Pretrained checkpoint & reproducing results".
 
 | Test set | PSNR ↑ | SSIM ↑ | LPIPS ↓ | MS-SSIM ↑ |
 |---|---|---|---|---|
