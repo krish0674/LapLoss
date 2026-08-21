@@ -26,6 +26,7 @@ Three discriminators — `Discriminator1/2/3` — supervise levels 0/1/2 respect
 ```
 LapLoss/
 ├── README.md
+├── 543.pth                           # pretrained generator checkpoint (see "Pretrained checkpoint & testing")
 ├── tryinit.ipynb                     # exploratory Kaggle notebook (duplicated under src/)
 └── src/
     ├── train.py                      # training entry point (argparse + Weights & Biases)
@@ -90,8 +91,8 @@ The framework is trained and tested on **SICE** and on its mixed-exposure varian
 
 | Dataset | Role | Source | Original paper |
 |---|---|---|---|
-| SICE (v1 / v2) | Train / val / test | [github.com/csjcai/SICE](https://github.com/csjcai/SICE) (images hosted on the Google Drive / BaiduYun links in that repo) | Cai et al., *IEEE TIP* 2018 |
-| SICE_Grad, SICE_Mix | Test only (mixed exposure) | Official: [github.com/ShenZheng2000/LLIE_Survey](https://github.com/ShenZheng2000/LLIE_Survey) · Mirror used here: [Google Drive](https://drive.google.com/file/d/1gii4AEyyPp_kagfa7TyugnNPvUhkX84x/view) | Zheng et al., arXiv:2212.10772, 2022 |
+| SICE (v1 / v2) | Train / val / test | [github.com/csjcai/SICE](https://github.com/csjcai/SICE) (images hosted on the Google Drive / BaiduYun links in that repo) · Kaggle mirror: [shauryasinghrathore/sicedataset](https://www.kaggle.com/datasets/shauryasinghrathore/sicedataset) | Cai et al., *IEEE TIP* 2018 |
+| SICE_Grad, SICE_Mix | Test only (mixed exposure) | Official: [github.com/ShenZheng2000/LLIE_Survey](https://github.com/ShenZheng2000/LLIE_Survey) · Mirror used here: [Google Drive](https://drive.google.com/file/d/1gii4AEyyPp_kagfa7TyugnNPvUhkX84x/view) · Kaggle mirror: [arrinu/sice-grad-and-sice-mix](https://www.kaggle.com/datasets/arrinu/sice-grad-and-sice-mix) | Zheng et al., arXiv:2212.10772, 2022 |
 
 SICE contains 589 multi-exposure scene sequences (7 or 9 images each, from under- to over-exposed) with a single well-exposed reference per scene. SICE_Grad and SICE_Mix are derived from SICE by cutting each reference into panels and re-tiling them: SICE_Grad arranges panels from low to high exposure (with some normally-exposed panels randomly placed), while SICE_Mix permutes panels at random. Both are reshaped to roughly 600×900 and are meant purely as **test** sets for uneven-illumination robustness.
 
@@ -169,6 +170,29 @@ python train.py \
 **Logging and checkpoints.** Training logs to a Weights & Biases project named `LapLoss`. The best generator (by validation SSIM) is written to `./best_model_g.pth` (discriminators to `./best_model_d.pth`) in the working directory, and is reloaded at the end of training.
 
 To run without a W&B account, either export `WANDB_MODE=offline` or replace `wandb.init(...)` with a no-op; 
+
+## Pretrained checkpoint & testing
+
+A pretrained generator checkpoint, **`543.pth`**, is included at the root of this repository, so you can run testing/evaluation directly without training the model yourself.
+
+The datasets needed for testing are available on Kaggle:
+
+- **SICE** (standard test sets, `Dataset_Part1` / `Dataset_Part2`): [kaggle.com/datasets/shauryasinghrathore/sicedataset](https://www.kaggle.com/datasets/shauryasinghrathore/sicedataset)
+- **SICE_Grad & SICE_Mix** (mixed-exposure test sets): [kaggle.com/datasets/arrinu/sice-grad-and-sice-mix](https://www.kaggle.com/datasets/arrinu/sice-grad-and-sice-mix)
+
+Download them, arrange the folders as shown in the "Expected directory layout" above, and point evaluation at the checkpoint:
+
+```bash
+cd src
+python eval.py \
+  --root_dir /path/to/SICE_root \
+  --model_path ../543.pth \
+  --exposure over \
+  --tf 10 \
+  --nrb_low 3 --nrb_high 3 --nrb_top 3
+```
+
+(If you are running on Kaggle, the two datasets above can be attached to a notebook directly and used as `--root_dir`.)
 
 ## Evaluation
 
